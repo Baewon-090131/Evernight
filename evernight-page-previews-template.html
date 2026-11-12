@@ -1,0 +1,2655 @@
+<div id="evernight-page-previews">
+  <style>
+    /* finesse · register=h5 · morph=A-app-shell · design-language=apple · apple-mode=app
+     * A=parchment+midnight+evernight-red · B=SF-Pro/Chinese-system · C=page-map+phone-gallery
+     * D=gesture-feedback · E=archive-light/midnight-gallery · SOUL=8 SPECTACLE=4 DENSITY=6 */
+    #evernight-page-previews {
+      --board-ink: light-dark(#1b171f, #f4eef5);
+      --board-muted: light-dark(#736b78, #b9afbd);
+      --board-line: light-dark(rgba(27, 23, 31, 0.1), rgba(244, 238, 245, 0.12));
+      --board-panel: light-dark(rgba(247, 244, 248, 0.9), rgba(24, 20, 29, 0.88));
+      --canvas-light: #f5f3f6;
+      --canvas-soft: #ece8ee;
+      --ink: #1b171f;
+      --muted: #726a78;
+      --line: rgba(27, 23, 31, 0.1);
+      --night: #09070d;
+      --night-2: #151019;
+      --night-3: #211927;
+      --blue: #0066cc;
+      --blue-soft: #ddebfa;
+      --ever: #941d45;
+      --ever-2: #d15c76;
+      --ever-soft: #f3dfe5;
+      --lav: #bcaecd;
+      --lav-soft: #e8e0ee;
+      --ease: cubic-bezier(0.32, 0.86, 0.28, 1);
+      color: var(--board-ink);
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC",
+        "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      font-size: 14px;
+      line-height: 1.5;
+      width: 100%;
+      max-width: 1024px;
+      margin: 0 auto;
+      padding: 8px 0 28px;
+    }
+
+    #evernight-page-previews *,
+    #evernight-page-previews *::before,
+    #evernight-page-previews *::after {
+      box-sizing: border-box;
+    }
+
+    #evernight-page-previews .ev-hero {
+      position: relative;
+      display: grid;
+      grid-template-columns: minmax(0, 1.4fr) minmax(180px, 0.6fr);
+      gap: 30px;
+      align-items: end;
+      min-height: 208px;
+      padding: 24px 28px 28px;
+      overflow: hidden;
+      border-bottom: 1px solid var(--board-line);
+    }
+
+    #evernight-page-previews .ev-hero::before {
+      content: "";
+      position: absolute;
+      right: 12%;
+      top: -160px;
+      width: 420px;
+      height: 420px;
+      border: 1px solid color-mix(in srgb, var(--ever) 34%, transparent);
+      border-radius: 50%;
+      opacity: 0.7;
+    }
+
+    #evernight-page-previews .ev-kicker {
+      position: relative;
+      margin: 0 0 10px;
+      color: var(--ever-2);
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+    }
+
+    #evernight-page-previews h1 {
+      position: relative;
+      z-index: 1;
+      max-width: 620px;
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "PingFang SC",
+        sans-serif;
+      font-size: 58px;
+      font-weight: 600;
+      line-height: 1.08;
+      letter-spacing: -0.045em;
+      text-wrap: balance;
+    }
+
+    #evernight-page-previews .ev-lede {
+      position: relative;
+      z-index: 1;
+      max-width: 530px;
+      margin: 18px 0 0;
+      color: var(--board-muted);
+      font-size: 16px;
+      line-height: 1.65;
+    }
+
+    #evernight-page-previews .ev-hero-art {
+      position: relative;
+      justify-self: end;
+      width: min(260px, 100%);
+      aspect-ratio: 1;
+      align-self: center;
+      margin-bottom: -46px;
+    }
+
+    #evernight-page-previews .ev-hero-art img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      filter: saturate(0.86) drop-shadow(0 22px 38px rgba(88, 20, 44, 0.16));
+    }
+
+    #evernight-page-previews .ev-flow {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 18px 28px 10px;
+    }
+
+    #evernight-page-previews .ev-flow span {
+      display: inline-flex;
+      align-items: center;
+      min-height: 32px;
+      padding: 5px 12px;
+      border: 1px solid var(--board-line);
+      border-radius: 999px;
+      background: var(--board-panel);
+      color: var(--board-muted);
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    #evernight-page-previews .ev-flow span::after {
+      content: "→";
+      margin-left: 13px;
+      color: color-mix(in srgb, var(--board-muted) 52%, transparent);
+    }
+
+    #evernight-page-previews .ev-flow span:last-child::after {
+      content: "";
+      margin: 0;
+    }
+
+    #evernight-page-previews .ev-demo-note {
+      margin: 0;
+      padding: 0 28px 10px;
+      color: var(--board-muted);
+      font-size: 11px;
+    }
+
+    #evernight-page-previews .ev-tabs-wrap {
+      padding: 8px 28px 22px;
+      border-bottom: 1px solid var(--board-line);
+    }
+
+    #evernight-page-previews .ev-tabs {
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      padding: 4px;
+      border: 1px solid var(--board-line);
+      border-radius: 999px;
+      background: var(--board-panel);
+      scrollbar-width: none;
+    }
+
+    #evernight-page-previews .ev-tabs::-webkit-scrollbar {
+      display: none;
+    }
+
+    #evernight-page-previews .ev-tab {
+      flex: 1 0 auto;
+      min-height: 44px;
+      padding: 8px 16px;
+      border: 0;
+      border-radius: 999px;
+      background: transparent;
+      color: var(--board-muted);
+      font: inherit;
+      font-size: 13px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    #evernight-page-previews .ev-tab[aria-selected="true"] {
+      background: var(--board-ink);
+      color: light-dark(#f8f5f9, #16121b);
+    }
+
+    #evernight-page-previews .ev-tab:active {
+      transform: scale(0.97);
+    }
+
+    #evernight-page-previews .ev-panel {
+      padding: 30px 28px 10px;
+    }
+
+    #evernight-page-previews .ev-group-head {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 22px;
+      margin-bottom: 18px;
+    }
+
+    #evernight-page-previews .ev-group-head h2 {
+      margin: 0;
+      font-size: 26px;
+      font-weight: 600;
+      letter-spacing: -0.025em;
+    }
+
+    #evernight-page-previews .ev-group-head p {
+      margin: 0;
+      color: var(--board-muted);
+      font-size: 13px;
+      text-align: right;
+    }
+
+    #evernight-page-previews .ev-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 22px 18px;
+      align-items: start;
+    }
+
+    #evernight-page-previews .ev-chip {
+      display: grid;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    #evernight-page-previews .ev-stage {
+      --scale: 0.78;
+      position: relative;
+      width: calc(390px * var(--scale));
+      height: calc(844px * var(--scale));
+      justify-self: center;
+      filter: drop-shadow(0 28px 32px rgba(24, 12, 26, 0.16));
+    }
+
+    #evernight-page-previews .ev-caption {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 12px;
+      width: 100%;
+      padding: 0 4px;
+    }
+
+    #evernight-page-previews .ev-caption strong {
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    #evernight-page-previews .ev-caption span {
+      color: var(--board-muted);
+      font-size: 11px;
+      text-align: right;
+    }
+
+    #evernight-page-previews .screen {
+      position: absolute;
+      inset: 0 auto auto 0;
+      width: 390px;
+      height: 844px;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 42px;
+      background: var(--canvas-light);
+      color: var(--ink);
+      transform: scale(var(--scale));
+      transform-origin: top left;
+      box-shadow:
+        0 0 0 7px #1a151d,
+        0 0 0 8px rgba(255, 255, 255, 0.18);
+      isolation: isolate;
+    }
+
+    #evernight-page-previews .screen::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: 90;
+      border-radius: inherit;
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.14);
+      pointer-events: none;
+    }
+
+    #evernight-page-previews .screen.dark {
+      background: var(--night);
+      color: #f7f1f5;
+    }
+
+    #evernight-page-previews .ios-status {
+      position: relative;
+      z-index: 20;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 50px;
+      padding: 12px 25px 0;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+    }
+
+    #evernight-page-previews .ios-status .sys {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    #evernight-page-previews .ios-status svg {
+      width: 15px;
+      height: 15px;
+      stroke-width: 2;
+    }
+
+    #evernight-page-previews .home-ind {
+      position: absolute;
+      left: 50%;
+      bottom: 8px;
+      z-index: 80;
+      width: 118px;
+      height: 4px;
+      border-radius: 99px;
+      background: currentColor;
+      opacity: 0.2;
+      transform: translateX(-50%);
+    }
+
+    #evernight-page-previews .nav {
+      position: absolute;
+      left: 20px;
+      right: 20px;
+      bottom: 25px;
+      z-index: 70;
+      display: flex;
+      align-items: center;
+      justify-content: space-around;
+      height: 64px;
+      padding: 0 12px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 32px;
+      background: rgba(22, 18, 26, 0.86);
+      color: rgba(255, 255, 255, 0.5);
+      box-shadow: 0 18px 38px rgba(20, 12, 24, 0.26);
+      backdrop-filter: blur(24px) saturate(150%);
+    }
+
+    #evernight-page-previews .nav.light {
+      border-color: rgba(27, 23, 31, 0.08);
+      background: rgba(248, 246, 249, 0.88);
+      color: rgba(27, 23, 31, 0.42);
+      box-shadow: 0 18px 38px rgba(45, 30, 48, 0.13);
+    }
+
+    #evernight-page-previews .nav-item {
+      position: relative;
+      display: grid;
+      place-items: center;
+      width: 56px;
+      height: 50px;
+    }
+
+    #evernight-page-previews .nav-item svg {
+      width: 21px;
+      height: 21px;
+      stroke-width: 1.8;
+    }
+
+    #evernight-page-previews .nav-item.on {
+      color: #f8f4f8;
+    }
+
+    #evernight-page-previews .nav.light .nav-item.on {
+      color: var(--canvas-light);
+    }
+
+    #evernight-page-previews .nav-item.on::before {
+      content: "";
+      position: absolute;
+      top: 1px;
+      width: 44px;
+      height: 42px;
+      border-radius: 22px;
+      background: var(--ever);
+    }
+
+    #evernight-page-previews .nav.light .nav-item.on::before {
+      background: var(--ink);
+    }
+
+    #evernight-page-previews .nav-item svg {
+      position: relative;
+      z-index: 1;
+    }
+
+    #evernight-page-previews .screen-inner {
+      position: relative;
+      z-index: 1;
+      height: calc(100% - 50px);
+      padding: 0 24px 28px;
+    }
+
+    #evernight-page-previews .glyph {
+      display: inline-grid;
+      place-items: center;
+      min-width: 1em;
+      font-style: normal;
+      font-weight: 500;
+      line-height: 1;
+    }
+
+    #evernight-page-previews .nav-item .glyph {
+      position: relative;
+      z-index: 1;
+      font-size: 18px;
+    }
+
+    #evernight-page-previews .screen-title {
+      margin: 8px 0 0;
+      font-size: 34px;
+      font-weight: 600;
+      line-height: 1.15;
+      letter-spacing: -0.04em;
+    }
+
+    #evernight-page-previews .screen-sub {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.55;
+    }
+
+    #evernight-page-previews .dark .screen-sub {
+      color: rgba(247, 241, 245, 0.58);
+    }
+
+    #evernight-page-previews .topline {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      min-height: 42px;
+    }
+
+    #evernight-page-previews .icon-btn {
+      display: grid;
+      place-items: center;
+      width: 40px;
+      height: 40px;
+      border-radius: 20px;
+      background: rgba(27, 23, 31, 0.055);
+      color: currentColor;
+    }
+
+    #evernight-page-previews .dark .icon-btn {
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    #evernight-page-previews .icon-btn svg {
+      width: 18px;
+      height: 18px;
+      stroke-width: 1.8;
+    }
+
+    #evernight-page-previews .icon-btn .glyph {
+      font-size: 17px;
+    }
+
+    #evernight-page-previews .pill {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      min-height: 34px;
+      padding: 7px 13px;
+      border-radius: 999px;
+      background: rgba(27, 23, 31, 0.06);
+      color: var(--ink);
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    #evernight-page-previews .dark .pill {
+      background: rgba(255, 255, 255, 0.08);
+      color: #f7f1f5;
+    }
+
+    #evernight-page-previews .btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 9px;
+      width: 100%;
+      min-height: 54px;
+      padding: 12px 18px;
+      border-radius: 999px;
+      background: var(--blue);
+      color: #f8fbff;
+      font-size: 15px;
+      font-weight: 600;
+    }
+
+    #evernight-page-previews .btn.secondary {
+      border: 1px solid var(--line);
+      background: transparent;
+      color: var(--ink);
+    }
+
+    #evernight-page-previews .dark .btn.secondary {
+      border-color: rgba(255, 255, 255, 0.16);
+      color: #f7f1f5;
+    }
+
+    #evernight-page-previews .btn.danger {
+      background: var(--ever);
+      color: #fff7f9;
+    }
+
+    #evernight-page-previews .btn svg {
+      width: 18px;
+      height: 18px;
+      stroke-width: 2;
+    }
+
+    #evernight-page-previews .photo {
+      background-color: var(--lav-soft);
+      background-position: center;
+      background-size: cover;
+      background-repeat: no-repeat;
+    }
+
+    #evernight-page-previews .p7503 {
+      background-image: var(--img-7503);
+    }
+
+    #evernight-page-previews .p7504 {
+      background-image: var(--img-7504);
+    }
+
+    #evernight-page-previews .p7505 {
+      background-image: var(--img-7505);
+    }
+
+    #evernight-page-previews .p7498 {
+      background-image: var(--img-7498);
+    }
+
+    #evernight-page-previews .motif-butterfly {
+      background-image: var(--img-butterfly);
+      background-size: contain;
+      background-repeat: no-repeat;
+      background-position: center;
+    }
+
+    #evernight-page-previews .motif-umbrella {
+      background-image: var(--img-umbrella);
+      background-size: contain;
+      background-repeat: no-repeat;
+      background-position: center;
+    }
+
+    /* 01 · access */
+    #evernight-page-previews .access-layout {
+      display: flex;
+      flex-direction: column;
+      min-height: calc(100% - 50px);
+      padding: 18px 24px 26px;
+      background:
+        radial-gradient(circle at 92% 7%, rgba(148, 29, 69, 0.08), transparent 26%),
+        var(--canvas-light);
+    }
+
+    #evernight-page-previews .access-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--ever);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+    }
+
+    #evernight-page-previews .brand-mark {
+      width: 26px;
+      height: 26px;
+      border-radius: 9px;
+      background-color: var(--ever-soft);
+      background-size: 130%;
+      box-shadow: inset 0 0 0 1px rgba(148, 29, 69, 0.08);
+    }
+
+    #evernight-page-previews .access-art {
+      position: relative;
+      height: 335px;
+      margin-top: 18px;
+      flex: none;
+    }
+
+    #evernight-page-previews .access-art::before {
+      content: "";
+      position: absolute;
+      left: 50%;
+      top: 9px;
+      width: 274px;
+      height: 274px;
+      border: 1px solid rgba(148, 29, 69, 0.18);
+      border-radius: 50%;
+      transform: translateX(-50%);
+    }
+
+    #evernight-page-previews .art-card {
+      position: absolute;
+      overflow: hidden;
+      border-radius: 22px;
+      box-shadow: 0 22px 44px rgba(54, 25, 54, 0.2);
+    }
+
+    #evernight-page-previews .art-card.one {
+      left: 19px;
+      top: 62px;
+      width: 190px;
+      height: 244px;
+      transform: rotate(-6deg);
+    }
+
+    #evernight-page-previews .art-card.two {
+      right: 10px;
+      top: 36px;
+      width: 156px;
+      height: 208px;
+      transform: rotate(7deg);
+      border: 5px solid rgba(248, 246, 249, 0.94);
+    }
+
+    #evernight-page-previews .art-card .caption {
+      position: absolute;
+      left: 12px;
+      bottom: 11px;
+      padding: 5px 9px;
+      border-radius: 999px;
+      background: rgba(9, 7, 13, 0.6);
+      color: #f7f1f5;
+      font-size: 9px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      backdrop-filter: blur(10px);
+    }
+
+    #evernight-page-previews .access-motif {
+      position: absolute;
+      right: -4px;
+      top: -8px;
+      width: 108px;
+      height: 108px;
+      opacity: 0.8;
+    }
+
+    #evernight-page-previews .access-copy {
+      margin-top: auto;
+    }
+
+    #evernight-page-previews .access-copy h2 {
+      margin: 0;
+      font-size: 42px;
+      font-weight: 600;
+      line-height: 1.08;
+      letter-spacing: -0.05em;
+    }
+
+    #evernight-page-previews .access-copy p {
+      margin: 13px 0 18px;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    #evernight-page-previews .privacy-note {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      margin-top: 13px;
+      color: var(--muted);
+      font-size: 10px;
+    }
+
+    #evernight-page-previews .privacy-note svg {
+      width: 12px;
+      height: 12px;
+    }
+
+    /* 02 · tonight */
+    #evernight-page-previews .home-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-top: 3px;
+    }
+
+    #evernight-page-previews .home-head strong {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--muted);
+    }
+
+    #evernight-page-previews .home-title {
+      margin: 22px 0 0;
+      font-size: 32px;
+      font-weight: 600;
+      line-height: 1.18;
+      letter-spacing: -0.04em;
+    }
+
+    #evernight-page-previews .home-title em {
+      color: var(--ever);
+      font-style: normal;
+    }
+
+    #evernight-page-previews .tonight-card {
+      position: relative;
+      margin-top: 21px;
+      padding: 20px;
+      overflow: hidden;
+      border-radius: 26px;
+      background: var(--night);
+      color: #f7f1f5;
+    }
+
+    #evernight-page-previews .tonight-card::before {
+      content: "";
+      position: absolute;
+      right: -45px;
+      top: -64px;
+      width: 188px;
+      height: 188px;
+      border: 1px solid rgba(209, 92, 118, 0.3);
+      border-radius: 50%;
+    }
+
+    #evernight-page-previews .tonight-top {
+      position: relative;
+      display: flex;
+      justify-content: space-between;
+      align-items: start;
+    }
+
+    #evernight-page-previews .tonight-top span {
+      color: rgba(255, 255, 255, 0.54);
+      font-size: 11px;
+    }
+
+    #evernight-page-previews .tonight-top strong {
+      display: block;
+      margin-top: 4px;
+      font-size: 20px;
+      font-weight: 600;
+    }
+
+    #evernight-page-previews .month-number {
+      font-family: "SF Pro Display", -apple-system, sans-serif;
+      font-size: 42px;
+      font-weight: 300;
+      line-height: 0.95;
+      letter-spacing: -0.05em;
+    }
+
+    #evernight-page-previews .tonight-strip {
+      display: grid;
+      grid-template-columns: 1.3fr 0.7fr 0.7fr;
+      gap: 8px;
+      height: 118px;
+      margin-top: 18px;
+    }
+
+    #evernight-page-previews .tonight-strip > div {
+      border-radius: 14px;
+      overflow: hidden;
+    }
+
+    #evernight-page-previews .tonight-progress {
+      margin-top: 17px;
+    }
+
+    #evernight-page-previews .tonight-progress .track {
+      height: 4px;
+      overflow: hidden;
+      border-radius: 99px;
+      background: rgba(255, 255, 255, 0.13);
+    }
+
+    #evernight-page-previews .tonight-progress .fill {
+      width: 62%;
+      height: 100%;
+      border-radius: inherit;
+      background: var(--ever-2);
+    }
+
+    #evernight-page-previews .tonight-progress .labels {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 8px;
+      color: rgba(255, 255, 255, 0.52);
+      font-size: 10px;
+    }
+
+    #evernight-page-previews .home-cta {
+      margin-top: 14px;
+      min-height: 50px;
+    }
+
+    #evernight-page-previews .mini-stats {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 14px;
+    }
+
+    #evernight-page-previews .mini-stat {
+      padding: 13px 12px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.36);
+    }
+
+    #evernight-page-previews .mini-stat strong {
+      display: block;
+      font-size: 21px;
+      font-weight: 600;
+      letter-spacing: -0.03em;
+    }
+
+    #evernight-page-previews .mini-stat span {
+      color: var(--muted);
+      font-size: 10px;
+    }
+
+    #evernight-page-previews .home-tool {
+      display: flex;
+      align-items: center;
+      gap: 13px;
+      margin-top: 15px;
+      padding: 14px 15px;
+      border-radius: 18px;
+      background: var(--canvas-soft);
+    }
+
+    #evernight-page-previews .home-tool .tool-icon {
+      display: grid;
+      place-items: center;
+      width: 40px;
+      height: 40px;
+      border-radius: 14px;
+      background: var(--ever-soft);
+      color: var(--ever);
+    }
+
+    #evernight-page-previews .home-tool svg {
+      width: 19px;
+      height: 19px;
+    }
+
+    #evernight-page-previews .home-tool strong {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    #evernight-page-previews .home-tool span {
+      color: var(--muted);
+      font-size: 10px;
+    }
+
+    #evernight-page-previews .home-tool .count {
+      margin-left: auto;
+      color: var(--ever);
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    /* 03 · months */
+    #evernight-page-previews .months-head {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+    }
+
+    #evernight-page-previews .filter-row {
+      display: flex;
+      gap: 6px;
+      margin-top: 18px;
+      overflow: hidden;
+    }
+
+    #evernight-page-previews .filter-row .pill {
+      min-height: 30px;
+      padding: 5px 11px;
+      color: var(--muted);
+      background: transparent;
+      border: 1px solid var(--line);
+    }
+
+    #evernight-page-previews .filter-row .pill.on {
+      background: var(--ink);
+      border-color: var(--ink);
+      color: var(--canvas-light);
+    }
+
+    #evernight-page-previews .month-feature {
+      position: relative;
+      height: 294px;
+      margin-top: 18px;
+      overflow: hidden;
+      border-radius: 25px;
+      background: var(--night);
+      color: #f7f1f5;
+    }
+
+    #evernight-page-previews .month-feature .hero-photo {
+      position: absolute;
+      inset: 0 0 0 42%;
+      opacity: 0.74;
+    }
+
+    #evernight-page-previews .month-feature::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(90deg, var(--night) 16%, rgba(9, 7, 13, 0.12) 100%);
+    }
+
+    #evernight-page-previews .month-feature-copy {
+      position: relative;
+      z-index: 2;
+      width: 61%;
+      padding: 23px 20px;
+    }
+
+    #evernight-page-previews .month-feature-copy span {
+      color: rgba(255, 255, 255, 0.54);
+      font-size: 10px;
+    }
+
+    #evernight-page-previews .month-feature-copy h3 {
+      margin: 11px 0 0;
+      font-size: 34px;
+      font-weight: 600;
+      line-height: 1;
+      letter-spacing: -0.04em;
+    }
+
+    #evernight-page-previews .month-feature-copy .big {
+      margin-top: 40px;
+      font-size: 48px;
+      font-weight: 300;
+      letter-spacing: -0.05em;
+      line-height: 1;
+    }
+
+    #evernight-page-previews .month-feature-copy p {
+      margin: 8px 0 0;
+      color: rgba(255, 255, 255, 0.52);
+      font-size: 10px;
+    }
+
+    #evernight-page-previews .month-row {
+      display: grid;
+      grid-template-columns: 74px minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 13px;
+      padding: 13px 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    #evernight-page-previews .month-row .thumb {
+      width: 74px;
+      height: 64px;
+      border-radius: 14px;
+      overflow: hidden;
+    }
+
+    #evernight-page-previews .month-row h4 {
+      margin: 0;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    #evernight-page-previews .month-row p {
+      margin: 5px 0 0;
+      color: var(--muted);
+      font-size: 10px;
+    }
+
+    #evernight-page-previews .month-row .value {
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    /* 04 · swipe */
+    #evernight-page-previews .swipe-wrap {
+      min-height: calc(100% - 50px);
+      padding: 3px 20px 24px;
+      background:
+        radial-gradient(circle at 50% 36%, rgba(139, 81, 137, 0.16), transparent 34%),
+        var(--night);
+    }
+
+    #evernight-page-previews .swipe-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1px 4px 8px;
+    }
+
+    #evernight-page-previews .swipe-head h2 {
+      margin: 0;
+      font-size: 17px;
+      font-weight: 600;
+    }
+
+    #evernight-page-previews .swipe-head span {
+      color: rgba(255, 255, 255, 0.46);
+      font-size: 10px;
+    }
+
+    #evernight-page-previews .swipe-progress {
+      height: 3px;
+      overflow: hidden;
+      border-radius: 99px;
+      background: rgba(255, 255, 255, 0.12);
+    }
+
+    #evernight-page-previews .swipe-progress div {
+      width: 37%;
+      height: 100%;
+      background: var(--ever-2);
+    }
+
+    #evernight-page-previews .media-toggle {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 3px;
+      margin: 13px auto 8px;
+      width: 188px;
+      padding: 3px;
+      border-radius: 13px;
+      background: rgba(255, 255, 255, 0.08);
+      color: rgba(255, 255, 255, 0.45);
+      font-size: 10px;
+      font-weight: 600;
+      text-align: center;
+    }
+
+    #evernight-page-previews .media-toggle .on {
+      padding: 6px 0;
+      border-radius: 10px;
+      background: #f7f1f5;
+      color: var(--night);
+    }
+
+    #evernight-page-previews .card-stage {
+      position: relative;
+      height: 480px;
+      margin-top: 2px;
+    }
+
+    #evernight-page-previews .swipe-card {
+      position: absolute;
+      left: 50%;
+      top: 26px;
+      width: 286px;
+      height: 421px;
+      overflow: hidden;
+      border-radius: 27px;
+      transform: translateX(-50%);
+      background: var(--night-3);
+      box-shadow: 0 25px 50px rgba(0, 0, 0, 0.42);
+    }
+
+    #evernight-page-previews .swipe-card .photo {
+      position: absolute;
+      inset: 0;
+    }
+
+    #evernight-page-previews .swipe-card::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(9, 7, 13, 0.08), transparent 55%, rgba(9, 7, 13, 0.72));
+    }
+
+    #evernight-page-previews .card-meta {
+      position: absolute;
+      z-index: 2;
+      left: 17px;
+      right: 17px;
+      bottom: 15px;
+      display: flex;
+      justify-content: space-between;
+      align-items: end;
+      color: #f7f1f5;
+    }
+
+    #evernight-page-previews .card-meta strong {
+      display: block;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    #evernight-page-previews .card-meta span {
+      color: rgba(255, 255, 255, 0.52);
+      font-size: 9px;
+    }
+
+    #evernight-page-previews .gesture {
+      position: absolute;
+      z-index: 4;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      color: rgba(255, 255, 255, 0.44);
+      font-size: 9px;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+    }
+
+    #evernight-page-previews .gesture svg {
+      width: 14px;
+      height: 14px;
+      stroke-width: 2;
+    }
+
+    #evernight-page-previews .g-left {
+      left: 4px;
+      top: 50%;
+      transform: translateY(-50%);
+    }
+
+    #evernight-page-previews .g-right {
+      right: 1px;
+      top: 50%;
+      transform: translateY(-50%);
+    }
+
+    #evernight-page-previews .g-up {
+      left: 50%;
+      top: 0;
+      transform: translateX(-50%);
+    }
+
+    #evernight-page-previews .g-down {
+      left: 50%;
+      bottom: 2px;
+      transform: translateX(-50%);
+    }
+
+    #evernight-page-previews .g-left svg {
+      transform: rotate(90deg);
+    }
+
+    #evernight-page-previews .g-right svg {
+      transform: rotate(-90deg);
+    }
+
+    #evernight-page-previews .g-down svg {
+      transform: rotate(180deg);
+    }
+
+    #evernight-page-previews .swipe-actions {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 18px;
+      margin-top: -7px;
+    }
+
+    #evernight-page-previews .round-action {
+      display: grid;
+      place-items: center;
+      width: 48px;
+      height: 48px;
+      border: 1px solid rgba(255, 255, 255, 0.11);
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.06);
+      color: rgba(255, 255, 255, 0.72);
+    }
+
+    #evernight-page-previews .round-action.main {
+      width: 58px;
+      height: 58px;
+      border: 0;
+      background: var(--ever);
+      color: #fff6f8;
+    }
+
+    #evernight-page-previews .round-action svg {
+      width: 20px;
+      height: 20px;
+      stroke-width: 1.9;
+    }
+
+    #evernight-page-previews .swipe-hint {
+      margin-top: 13px;
+      color: rgba(255, 255, 255, 0.44);
+      font-size: 9px;
+      text-align: center;
+    }
+
+    /* 05 · gesture feedback */
+    #evernight-page-previews .feedback-card {
+      top: 58px;
+      transform: translateX(-48%) rotate(-7deg);
+    }
+
+    #evernight-page-previews .feedback-card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+      border: 2px solid rgba(209, 92, 118, 0.86);
+      border-radius: inherit;
+      box-shadow: inset 0 30px 42px rgba(148, 29, 69, 0.35);
+    }
+
+    #evernight-page-previews .delete-stamp {
+      position: absolute;
+      z-index: 4;
+      top: 32px;
+      left: 24px;
+      padding: 8px 15px;
+      border: 2px solid var(--ever-2);
+      border-radius: 13px;
+      background: rgba(9, 7, 13, 0.42);
+      color: #f3a4b4;
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      transform: rotate(-5deg);
+      backdrop-filter: blur(7px);
+    }
+
+    #evernight-page-previews .feedback-ring {
+      position: absolute;
+      left: 50%;
+      top: 42px;
+      width: 332px;
+      height: 466px;
+      border: 1px dashed rgba(209, 92, 118, 0.3);
+      border-radius: 38px;
+      transform: translateX(-50%);
+    }
+
+    #evernight-page-previews .feedback-label {
+      position: absolute;
+      z-index: 8;
+      left: 50%;
+      bottom: 10px;
+      width: 220px;
+      padding: 12px 14px;
+      border: 1px solid rgba(209, 92, 118, 0.3);
+      border-radius: 16px;
+      background: rgba(38, 24, 38, 0.9);
+      color: #f7e9ed;
+      transform: translateX(-50%);
+      font-size: 11px;
+      text-align: center;
+      backdrop-filter: blur(16px);
+    }
+
+    #evernight-page-previews .feedback-label strong {
+      color: #f2a2b2;
+    }
+
+    /* 06 · completion */
+    #evernight-page-previews .complete {
+      position: relative;
+      min-height: calc(100% - 50px);
+      padding: 28px 24px 26px;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at 50% 18%, rgba(148, 29, 69, 0.25), transparent 28%),
+        var(--night);
+    }
+
+    #evernight-page-previews .complete-butterfly {
+      position: absolute;
+      top: -34px;
+      right: -62px;
+      width: 260px;
+      height: 260px;
+      opacity: 0.32;
+      transform: rotate(11deg);
+    }
+
+    #evernight-page-previews .complete-orbit {
+      position: absolute;
+      left: 50%;
+      top: 83px;
+      width: 318px;
+      height: 318px;
+      border: 1px solid rgba(209, 92, 118, 0.18);
+      border-radius: 50%;
+      transform: translateX(-50%);
+    }
+
+    #evernight-page-previews .complete-copy {
+      position: relative;
+      z-index: 2;
+      margin-top: 72px;
+      text-align: center;
+    }
+
+    #evernight-page-previews .complete-copy span {
+      color: rgba(255, 255, 255, 0.48);
+      font-size: 11px;
+    }
+
+    #evernight-page-previews .complete-number {
+      margin-top: 9px;
+      font-family: "SF Pro Display", -apple-system, sans-serif;
+      font-size: 92px;
+      font-weight: 200;
+      line-height: 0.95;
+      letter-spacing: -0.06em;
+    }
+
+    #evernight-page-previews .complete-copy h2 {
+      margin: 5px 0 0;
+      font-size: 25px;
+      font-weight: 600;
+      letter-spacing: -0.03em;
+    }
+
+    #evernight-page-previews .complete-copy p {
+      margin: 10px auto 0;
+      max-width: 270px;
+      color: rgba(255, 255, 255, 0.5);
+      font-size: 12px;
+      line-height: 1.6;
+    }
+
+    #evernight-page-previews .receipt {
+      position: relative;
+      z-index: 2;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 1px;
+      margin-top: 62px;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    #evernight-page-previews .receipt div {
+      padding: 15px 8px;
+      background: rgba(255, 255, 255, 0.035);
+      text-align: center;
+    }
+
+    #evernight-page-previews .receipt strong {
+      display: block;
+      font-size: 17px;
+      font-weight: 600;
+    }
+
+    #evernight-page-previews .receipt span {
+      color: rgba(255, 255, 255, 0.42);
+      font-size: 9px;
+    }
+
+    #evernight-page-previews .complete-actions {
+      position: absolute;
+      left: 24px;
+      right: 24px;
+      bottom: 34px;
+      z-index: 3;
+    }
+
+    /* 07 · similar */
+    #evernight-page-previews .similar-groups {
+      display: grid;
+      gap: 13px;
+      margin-top: 18px;
+    }
+
+    #evernight-page-previews .similar-card {
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      background: rgba(255, 255, 255, 0.44);
+    }
+
+    #evernight-page-previews .similar-photos {
+      display: grid;
+      grid-template-columns: 1.4fr 0.8fr 0.8fr;
+      gap: 5px;
+      height: 95px;
+    }
+
+    #evernight-page-previews .similar-photos > div {
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    #evernight-page-previews .similar-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    #evernight-page-previews .similar-meta strong {
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    #evernight-page-previews .similar-meta span {
+      display: block;
+      margin-top: 2px;
+      color: var(--muted);
+      font-size: 9px;
+    }
+
+    #evernight-page-previews .recommend-chip {
+      flex: none;
+      padding: 5px 9px;
+      border-radius: 999px;
+      background: var(--blue-soft);
+      color: #085aae;
+      font-size: 9px;
+      font-weight: 600;
+    }
+
+    #evernight-page-previews .similar-card.active-card {
+      border-color: rgba(0, 102, 204, 0.32);
+      box-shadow: 0 0 0 1px rgba(0, 102, 204, 0.08);
+    }
+
+    /* 08 · compare */
+    #evernight-page-previews .compare-stage {
+      position: relative;
+      height: 520px;
+      margin-top: 20px;
+      overflow: hidden;
+      border-radius: 26px;
+      background: var(--night);
+    }
+
+    #evernight-page-previews .compare-stage .primary-photo {
+      position: absolute;
+      inset: 0 0 36% 0;
+      background-position: center 22%;
+    }
+
+    #evernight-page-previews .compare-thumbs {
+      position: absolute;
+      left: 12px;
+      right: 12px;
+      bottom: 12px;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 7px;
+      height: 148px;
+    }
+
+    #evernight-page-previews .compare-thumbs > div {
+      position: relative;
+      overflow: hidden;
+      border: 2px solid transparent;
+      border-radius: 14px;
+    }
+
+    #evernight-page-previews .compare-thumbs .selected {
+      border-color: #73b9ff;
+    }
+
+    #evernight-page-previews .compare-thumbs .selected::after {
+      content: "建议保留";
+      position: absolute;
+      left: 7px;
+      top: 7px;
+      padding: 3px 7px;
+      border-radius: 999px;
+      background: var(--blue);
+      color: #fff;
+      font-size: 8px;
+      font-weight: 600;
+    }
+
+    #evernight-page-previews .compare-reasons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 13px;
+    }
+
+    #evernight-page-previews .compare-reasons span {
+      padding: 6px 9px;
+      border-radius: 999px;
+      background: var(--canvas-soft);
+      color: var(--muted);
+      font-size: 9px;
+    }
+
+    #evernight-page-previews .bottom-actions {
+      position: absolute;
+      left: 24px;
+      right: 24px;
+      bottom: 30px;
+      z-index: 8;
+      display: grid;
+      grid-template-columns: 0.8fr 1.2fr;
+      gap: 9px;
+    }
+
+    /* 09 · pending delete */
+    #evernight-page-previews .delete-screen {
+      min-height: calc(100% - 50px);
+      padding: 2px 22px 28px;
+      background:
+        linear-gradient(180deg, rgba(148, 29, 69, 0.13), transparent 24%),
+        var(--night);
+    }
+
+    #evernight-page-previews .delete-summary {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      margin-top: 5px;
+    }
+
+    #evernight-page-previews .delete-summary h2 {
+      margin: 0;
+      font-size: 30px;
+      font-weight: 600;
+      letter-spacing: -0.04em;
+    }
+
+    #evernight-page-previews .delete-summary p {
+      margin: 7px 0 0;
+      color: rgba(255, 255, 255, 0.46);
+      font-size: 10px;
+    }
+
+    #evernight-page-previews .delete-summary .size {
+      font-size: 20px;
+      font-weight: 300;
+      letter-spacing: -0.03em;
+    }
+
+    #evernight-page-previews .delete-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 6px;
+      margin-top: 17px;
+    }
+
+    #evernight-page-previews .delete-tile {
+      position: relative;
+      aspect-ratio: 0.77;
+      overflow: hidden;
+      border-radius: 14px;
+    }
+
+    #evernight-page-previews .delete-tile .x {
+      position: absolute;
+      top: 7px;
+      right: 7px;
+      display: grid;
+      place-items: center;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: rgba(148, 29, 69, 0.86);
+      color: #fff;
+      backdrop-filter: blur(8px);
+    }
+
+    #evernight-page-previews .delete-tile .x svg {
+      width: 11px;
+      height: 11px;
+    }
+
+    #evernight-page-previews .delete-note {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 15px;
+      padding: 11px 12px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.04);
+      color: rgba(255, 255, 255, 0.5);
+      font-size: 9px;
+      line-height: 1.5;
+    }
+
+    #evernight-page-previews .delete-note svg {
+      flex: none;
+      width: 15px;
+      height: 15px;
+      color: var(--ever-2);
+    }
+
+    #evernight-page-previews .delete-actions {
+      position: absolute;
+      left: 22px;
+      right: 22px;
+      bottom: 31px;
+      z-index: 8;
+      display: grid;
+      gap: 9px;
+    }
+
+    /* 10 · album picker */
+    #evernight-page-previews .picker-backdrop {
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(180deg, rgba(9, 7, 13, 0.15), rgba(9, 7, 13, 0.7)),
+        var(--img-7505) center 26% / cover no-repeat;
+      filter: saturate(0.8);
+    }
+
+    #evernight-page-previews .picker-backdrop::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      backdrop-filter: blur(7px);
+    }
+
+    #evernight-page-previews .picker-sheet {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 5;
+      min-height: 592px;
+      padding: 10px 22px 32px;
+      border-radius: 29px 29px 0 0;
+      background: #f5f3f6;
+      color: var(--ink);
+      box-shadow: 0 -24px 60px rgba(0, 0, 0, 0.28);
+    }
+
+    #evernight-page-previews .grab {
+      width: 40px;
+      height: 4px;
+      margin: 0 auto 18px;
+      border-radius: 99px;
+      background: rgba(27, 23, 31, 0.16);
+    }
+
+    #evernight-page-previews .sheet-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    #evernight-page-previews .sheet-head h2 {
+      margin: 0;
+      font-size: 24px;
+      font-weight: 600;
+      letter-spacing: -0.035em;
+    }
+
+    #evernight-page-previews .search-pill {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 40px;
+      margin-top: 14px;
+      padding: 8px 13px;
+      border-radius: 999px;
+      background: var(--canvas-soft);
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    #evernight-page-previews .search-pill svg {
+      width: 15px;
+      height: 15px;
+    }
+
+    #evernight-page-previews .album-option {
+      display: grid;
+      grid-template-columns: 52px minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 12px;
+      padding: 9px 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    #evernight-page-previews .album-option .thumb {
+      width: 52px;
+      height: 52px;
+      border-radius: 13px;
+      overflow: hidden;
+    }
+
+    #evernight-page-previews .album-option strong {
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    #evernight-page-previews .album-option span {
+      display: block;
+      color: var(--muted);
+      font-size: 9px;
+    }
+
+    #evernight-page-previews .album-option .check {
+      display: grid;
+      place-items: center;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: var(--blue);
+      color: #fff;
+    }
+
+    #evernight-page-previews .album-option .check svg {
+      width: 12px;
+      height: 12px;
+    }
+
+    #evernight-page-previews .picker-sheet .btn {
+      margin-top: 18px;
+    }
+
+    /* 11 · albums */
+    #evernight-page-previews .albums-bento {
+      display: grid;
+      grid-template-columns: 1.25fr 0.75fr;
+      grid-template-rows: 150px 116px;
+      gap: 8px;
+      margin-top: 18px;
+    }
+
+    #evernight-page-previews .album-block {
+      position: relative;
+      overflow: hidden;
+      border-radius: 20px;
+      background: var(--canvas-soft);
+    }
+
+    #evernight-page-previews .album-block .cover {
+      position: absolute;
+      inset: 0;
+    }
+
+    #evernight-page-previews .album-block .label {
+      position: absolute;
+      left: 12px;
+      right: 12px;
+      bottom: 11px;
+      z-index: 2;
+      color: #fff;
+    }
+
+    #evernight-page-previews .album-block .label strong {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    #evernight-page-previews .album-block .label span {
+      color: rgba(255, 255, 255, 0.58);
+      font-size: 9px;
+    }
+
+    #evernight-page-previews .album-block .cover::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, transparent 40%, rgba(9, 7, 13, 0.64));
+    }
+
+    #evernight-page-previews .album-block.wide {
+      grid-row: span 2;
+    }
+
+    #evernight-page-previews .album-small-copy {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 15px;
+      background: var(--night);
+      color: #f7f1f5;
+    }
+
+    #evernight-page-previews .album-small-copy strong {
+      font-size: 24px;
+      font-weight: 300;
+      letter-spacing: -0.04em;
+    }
+
+    #evernight-page-previews .album-small-copy span {
+      color: rgba(255, 255, 255, 0.45);
+      font-size: 9px;
+    }
+
+    #evernight-page-previews .suggestion {
+      margin-top: 16px;
+      border-top: 1px solid var(--line);
+    }
+
+    #evernight-page-previews .suggestion-row {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      min-height: 57px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    #evernight-page-previews .suggestion-row .icon {
+      display: grid;
+      place-items: center;
+      width: 34px;
+      height: 34px;
+      border-radius: 12px;
+      background: var(--ever-soft);
+      color: var(--ever);
+    }
+
+    #evernight-page-previews .suggestion-row svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    #evernight-page-previews .suggestion-row strong {
+      display: block;
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    #evernight-page-previews .suggestion-row span {
+      color: var(--muted);
+      font-size: 9px;
+    }
+
+    #evernight-page-previews .suggestion-row .go {
+      margin-left: auto;
+      color: var(--muted);
+    }
+
+    /* 12 · profile */
+    #evernight-page-previews .profile-hero {
+      position: relative;
+      margin-top: 18px;
+      padding: 19px;
+      overflow: hidden;
+      border-radius: 24px;
+      background: var(--night);
+      color: #f7f1f5;
+    }
+
+    #evernight-page-previews .profile-hero .motif {
+      position: absolute;
+      right: -24px;
+      top: -18px;
+      width: 122px;
+      height: 122px;
+      opacity: 0.28;
+    }
+
+    #evernight-page-previews .profile-hero span {
+      color: rgba(255, 255, 255, 0.48);
+      font-size: 9px;
+    }
+
+    #evernight-page-previews .profile-hero .big {
+      margin-top: 8px;
+      font-size: 42px;
+      font-weight: 300;
+      line-height: 1;
+      letter-spacing: -0.05em;
+    }
+
+    #evernight-page-previews .profile-hero p {
+      margin: 8px 0 0;
+      color: rgba(255, 255, 255, 0.48);
+      font-size: 9px;
+    }
+
+    #evernight-page-previews .profile-stats {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      margin-top: 13px;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    #evernight-page-previews .profile-stats div {
+      padding-top: 12px;
+      text-align: center;
+    }
+
+    #evernight-page-previews .profile-stats div + div {
+      border-left: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    #evernight-page-previews .profile-stats strong {
+      display: block;
+      font-size: 15px;
+      font-weight: 600;
+    }
+
+    #evernight-page-previews .profile-stats span {
+      font-size: 8px;
+    }
+
+    #evernight-page-previews .settings-list {
+      margin-top: 15px;
+      border-top: 1px solid var(--line);
+    }
+
+    #evernight-page-previews .setting-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-height: 54px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    #evernight-page-previews .setting-row .icon {
+      display: grid;
+      place-items: center;
+      width: 32px;
+      height: 32px;
+      border-radius: 11px;
+      background: var(--canvas-soft);
+      color: var(--muted);
+    }
+
+    #evernight-page-previews .setting-row svg {
+      width: 15px;
+      height: 15px;
+    }
+
+    #evernight-page-previews .setting-row strong {
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    #evernight-page-previews .setting-row .value {
+      margin-left: auto;
+      color: var(--muted);
+      font-size: 9px;
+    }
+
+    @media (max-width: 959px) {
+      #evernight-page-previews .ev-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      #evernight-page-previews .ev-stage {
+        --scale: 0.84;
+      }
+    }
+
+    @media (max-width: 700px) {
+      #evernight-page-previews .ev-hero {
+        grid-template-columns: minmax(0, 1fr);
+        min-height: 0;
+        padding: 24px 20px;
+      }
+
+      #evernight-page-previews h1 {
+        font-size: 42px;
+      }
+
+      #evernight-page-previews .ev-hero-art {
+        position: absolute;
+        right: -30px;
+        top: 14px;
+        width: 170px;
+        opacity: 0.28;
+      }
+
+      #evernight-page-previews .ev-flow,
+      #evernight-page-previews .ev-tabs-wrap,
+      #evernight-page-previews .ev-panel {
+        padding-left: 20px;
+        padding-right: 20px;
+      }
+    }
+
+    @media (max-width: 620px) {
+      #evernight-page-previews .ev-grid {
+        grid-template-columns: minmax(0, 1fr);
+      }
+
+      #evernight-page-previews .ev-stage {
+        --scale: 0.86;
+      }
+
+      #evernight-page-previews .ev-group-head {
+        display: block;
+      }
+
+      #evernight-page-previews .ev-group-head p {
+        margin-top: 7px;
+        text-align: left;
+      }
+
+      #evernight-page-previews .ev-tabs {
+        border-radius: 18px;
+      }
+    }
+
+    @media (max-width: 380px) {
+      #evernight-page-previews .ev-stage {
+        --scale: 0.62;
+      }
+    }
+  </style>
+
+  <header class="ev-hero">
+    <div>
+      <p class="ev-kicker">EVERNIGHT · GALLERY SORTER</p>
+      <h1>让回忆<br />各归其位。</h1>
+      <p class="ev-lede">
+        一套以四向手势为核心的 iOS 相册整理体验。Apple 式画廊结构承载照片，
+        长夜月的蝶花与夜伞只做识别点，不抢内容。
+      </p>
+    </div>
+    <div class="ev-hero-art">
+      <img src="__IMG_BUTTERFLY__" alt="" aria-hidden="true" />
+    </div>
+  </header>
+
+  <div class="ev-flow" aria-label="核心流程">
+    <span>授权</span>
+    <span>今夜</span>
+    <span>逐月</span>
+    <span>滑动整理</span>
+    <span>相似整理</span>
+    <span>安全确认</span>
+    <span>归档</span>
+  </div>
+  <p class="ev-demo-note">页面中的数量、空间与整理结果为演示数据，不代表真实相册统计。</p>
+
+  <div class="ev-tabs-wrap">
+    <div class="ev-tabs" role="tablist" aria-label="页面预览分组">
+      <button class="ev-tab" type="button" role="tab" id="ev-tab-entry" aria-controls="ev-panel-entry" aria-selected="true">
+        进入与今日
+      </button>
+      <button class="ev-tab" type="button" role="tab" id="ev-tab-swipe" aria-controls="ev-panel-swipe" aria-selected="false">
+        滑动整理
+      </button>
+      <button class="ev-tab" type="button" role="tab" id="ev-tab-smart" aria-controls="ev-panel-smart" aria-selected="false">
+        智能整理
+      </button>
+      <button class="ev-tab" type="button" role="tab" id="ev-tab-albums" aria-controls="ev-panel-albums" aria-selected="false">
+        相簿与设置
+      </button>
+    </div>
+  </div>
+
+  <section class="ev-panel" id="ev-panel-entry" role="tabpanel" aria-labelledby="ev-tab-entry">
+    <div class="ev-group-head">
+      <h2>先建立信任，再开始整理</h2>
+      <p>授权 → 今日入口 → 月份选择</p>
+    </div>
+    <div class="ev-grid">
+      <article class="ev-chip">
+        <div class="ev-stage">
+          <div class="screen">
+            <div class="ios-status">
+              <span class="time">21:17</span>
+              <div class="sys"><i data-lucide="signal"></i><i data-lucide="wifi"></i><i data-lucide="battery-full"></i></div>
+            </div>
+            <div class="access-layout">
+              <div class="access-brand"><span class="brand-mark motif-butterfly"></span>EVERNIGHT</div>
+              <div class="access-art">
+                <div class="access-motif motif-umbrella"></div>
+                <div class="art-card one photo p7503"><span class="caption">2026 · 长夜</span></div>
+                <div class="art-card two photo p7504"><span class="caption">记忆的归处</span></div>
+              </div>
+              <div class="access-copy">
+                <h2>让回忆<br />各归其位</h2>
+                <p>按月滑动整理，识别相似内容，把值得留下的放进相簿。</p>
+                <div class="btn"><i data-lucide="image-plus"></i>连接相册</div>
+                <div class="btn secondary" style="margin-top:9px">先看看演示</div>
+                <div class="privacy-note"><i data-lucide="shield-check"></i>仅在本机分析，删除前再次确认</div>
+              </div>
+            </div>
+            <div class="home-ind"></div>
+          </div>
+        </div>
+        <div class="ev-caption"><strong>授权入口</strong><span>隐私说明先行</span></div>
+      </article>
+
+      <article class="ev-chip">
+        <div class="ev-stage">
+          <div class="screen">
+            <div class="ios-status">
+              <span class="time">21:17</span>
+              <div class="sys"><i data-lucide="signal"></i><i data-lucide="wifi"></i><i data-lucide="battery-full"></i></div>
+            </div>
+            <div class="screen-inner">
+              <div class="home-head">
+                <strong>11月12日 · 周四</strong>
+                <div class="icon-btn"><i data-lucide="settings-2"></i></div>
+              </div>
+              <h2 class="home-title">今晚，从<br /><em>十月</em>开始</h2>
+              <div class="tonight-card">
+                <div class="tonight-top">
+                  <div><span>当前整理</span><strong>十月相册</strong></div>
+                  <div class="month-number">10</div>
+                </div>
+                <div class="tonight-strip">
+                  <div class="photo p7503"></div>
+                  <div class="photo p7504"></div>
+                  <div class="photo p7505"></div>
+                </div>
+                <div class="tonight-progress">
+                  <div class="track"><div class="fill"></div></div>
+                  <div class="labels"><span>已整理 178 / 286</span><span>还剩 108 张</span></div>
+                </div>
+              </div>
+              <div class="btn home-cta"><i data-lucide="arrow-left"></i>继续向左整理</div>
+              <div class="mini-stats">
+                <div class="mini-stat"><strong>43</strong><span>相似内容</span></div>
+                <div class="mini-stat"><strong>14</strong><span>待删除</span></div>
+                <div class="mini-stat"><strong>32</strong><span>已入相簿</span></div>
+              </div>
+              <div class="home-tool">
+                <div class="tool-icon"><i data-lucide="sparkles"></i></div>
+                <div><strong>相似回忆已分组</strong><span>连拍、截图与重复照片</span></div>
+                <div class="count">43</div>
+              </div>
+            </div>
+            <nav class="nav light" aria-label="主导航">
+              <div class="nav-item on"><i data-lucide="moon-star"></i></div>
+              <div class="nav-item"><i data-lucide="calendar-days"></i></div>
+              <div class="nav-item"><i data-lucide="images"></i></div>
+              <div class="nav-item"><i data-lucide="user-round"></i></div>
+            </nav>
+            <div class="home-ind"></div>
+          </div>
+        </div>
+        <div class="ev-caption"><strong>今夜</strong><span>从当前月份继续</span></div>
+      </article>
+
+      <article class="ev-chip">
+        <div class="ev-stage">
+          <div class="screen">
+            <div class="ios-status">
+              <span class="time">21:17</span>
+              <div class="sys"><i data-lucide="signal"></i><i data-lucide="wifi"></i><i data-lucide="battery-full"></i></div>
+            </div>
+            <div class="screen-inner">
+              <div class="months-head">
+                <div><h2 class="screen-title">逐月</h2><p class="screen-sub">按月，找回清晰的节奏。</p></div>
+                <div class="icon-btn"><i data-lucide="search"></i></div>
+              </div>
+              <div class="filter-row">
+                <span class="pill on">全部</span><span class="pill">未整理</span><span class="pill">相似</span><span class="pill">待删</span>
+              </div>
+              <div class="month-feature">
+                <div class="hero-photo photo p7503"></div>
+                <div class="month-feature-copy">
+                  <span>正在整理</span>
+                  <h3>十月<br />October</h3>
+                  <div class="big">286</div>
+                  <p>张照片 · 已整理 62%</p>
+                </div>
+              </div>
+              <div class="month-row">
+                <div class="thumb photo p7504"></div>
+                <div><h4>九月</h4><p>相似 18 · 待删 7</p></div>
+                <span class="value">已整理</span>
+              </div>
+              <div class="month-row">
+                <div class="thumb photo p7505"></div>
+                <div><h4>八月</h4><p>相似 9 · 待删 2</p></div>
+                <span class="value">去看看</span>
+              </div>
+              <div class="month-row">
+                <div class="thumb photo p7498"></div>
+                <div><h4>七月</h4><p>未开始整理</p></div>
+                <span class="value">未整理</span>
+              </div>
+            </div>
+            <nav class="nav light" aria-label="主导航">
+              <div class="nav-item"><i data-lucide="moon-star"></i></div>
+              <div class="nav-item on"><i data-lucide="calendar-days"></i></div>
+              <div class="nav-item"><i data-lucide="images"></i></div>
+              <div class="nav-item"><i data-lucide="user-round"></i></div>
+            </nav>
+            <div class="home-ind"></div>
+          </div>
+        </div>
+        <div class="ev-caption"><strong>逐月</strong><span>按月建立整理节奏</span></div>
+      </article>
+    </div>
+  </section>
+
+  <section class="ev-panel" id="ev-panel-swipe" role="tabpanel" aria-labelledby="ev-tab-swipe" hidden>
+    <div class="ev-group-head">
+      <h2>四向手势，始终可撤回</h2>
+      <p>左下一张 · 右撤回 · 上待删 · 下入相簿</p>
+    </div>
+    <div class="ev-grid">
+      <article class="ev-chip">
+        <div class="ev-stage">
+          <div class="screen dark">
+            <div class="ios-status">
+              <span class="time">21:17</span>
+              <div class="sys"><i data-lucide="signal"></i><i data-lucide="wifi"></i><i data-lucide="battery-full"></i></div>
+            </div>
+            <div class="swipe-wrap">
+              <div class="swipe-head">
+                <h2>十月 · 滑动整理</h2>
+                <span>109 / 286</span>
+              </div>
+              <div class="swipe-progress"><div></div></div>
+              <div class="media-toggle"><div>照片</div><div class="on">视频</div></div>
+              <div class="card-stage">
+                <div class="gesture g-up"><i data-lucide="arrow-up"></i>待删除</div>
+                <div class="gesture g-left"><i data-lucide="arrow-up"></i>下一张</div>
+                <div class="gesture g-right"><i data-lucide="arrow-up"></i>撤回</div>
+                <div class="gesture g-down"><i data-lucide="arrow-up"></i>放入相簿</div>
+                <div class="swipe-card">
+                  <div class="photo p7503"></div>
+                  <div class="card-meta"><div><strong>长夜月 · 取景框</strong><span>10月18日 21:42</span></div><span>4K</span></div>
+                </div>
+              </div>
+              <div class="swipe-actions">
+                <div class="round-action"><i data-lucide="undo-2"></i></div>
+                <div class="round-action main"><i data-lucide="trash-2"></i></div>
+                <div class="round-action"><i data-lucide="folder-heart"></i></div>
+              </div>
+              <div class="swipe-hint">拖动 1:1 跟手；距离或速度满足任一条件即完成</div>
+            </div>
+            <div class="home-ind"></div>
+          </div>
+        </div>
+        <div class="ev-caption"><strong>滑卡整理</strong><span>主工作区</span></div>
+      </article>
+
+      <article class="ev-chip">
+        <div class="ev-stage">
+          <div class="screen dark">
+            <div class="ios-status">
+              <span class="time">21:17</span>
+              <div class="sys"><i data-lucide="signal"></i><i data-lucide="wifi"></i><i data-lucide="battery-full"></i></div>
+            </div>
+            <div class="swipe-wrap">
+              <div class="swipe-head">
+                <h2>向上滑 · 移入待删除</h2>
+                <span>109 / 286</span>
+              </div>
+              <div class="swipe-progress"><div></div></div>
+              <div class="media-toggle"><div>照片</div><div class="on">视频</div></div>
+              <div class="card-stage">
+                <div class="feedback-ring"></div>
+                <div class="swipe-card feedback-card">
+                  <div class="photo p7505"></div>
+                  <div class="delete-stamp">待删除</div>
+                  <div class="card-meta"><div><strong>雨中降落</strong><span>10月18日 21:46</span></div><span>0:18</span></div>
+                </div>
+                <div class="feedback-label">已跨越阈值<br /><strong>松手后移入待删除区</strong></div>
+              </div>
+            </div>
+            <div class="home-ind"></div>
+          </div>
+        </div>
+        <div class="ev-caption"><strong>手势反馈</strong><span>方向与结果同屏</span></div>
+      </article>
+
+      <article class="ev-chip">
+        <div class="ev-stage">
+          <div class="screen dark">
+            <div class="ios-status">
+              <span class="time">21:17</span>
+              <div class="sys"><i data-lucide="signal"></i><i data-lucide="wifi"></i><i data-lucide="battery-full"></i></div>
+            </div>
+            <div class="complete">
+              <div class="complete-orbit"></div>
+              <div class="complete-butterfly motif-butterfly"></div>
+              <div class="topline">
+                <div class="icon-btn"><i data-lucide="x"></i></div>
+                <span class="pill">十月回执</span>
+              </div>
+              <div class="complete-copy">
+                <span>2026 · OCTOBER</span>
+                <div class="complete-number">286</div>
+                <h2>张回忆已归位</h2>
+                <p>本次整理没有直接删除任何内容。你会先复核待删除项。</p>
+              </div>
+              <div class="receipt">
+                <div><strong>43</strong><span>相似内容</span></div>
+                <div><strong>84</strong><span>移入相簿</span></div>
+                <div><strong>1.8G</strong><span>预计释放</span></div>
+              </div>
+              <div class="complete-actions">
+                <div class="btn"><i data-lucide="shield-alert"></i>查看待删除 14 项</div>
+                <div class="btn secondary" style="margin-top:9px">完成</div>
+              </div>
+            </div>
+            <div class="home-ind"></div>
+          </div>
+        </div>
+        <div class="ev-caption"><strong>完成回执</strong><span>结果明确，不直接删除</span></div>
+      </article>
+    </div>
+  </section>
+
+  <section class="ev-panel" id="ev-panel-smart" role="tabpanel" aria-labelledby="ev-tab-smart" hidden>
+    <div class="ev-group-head">
+      <h2>先识别，再把决定交给用户</h2>
+      <p>相似分组 → 单组比较 → 安全删除确认</p>
+    </div>
+    <div class="ev-grid">
+      <article class="ev-chip">
+        <div class="ev-stage">
+          <div class="screen">
+            <div class="ios-status">
+              <span class="time">21:17</span>
+              <div class="sys"><i data-lucide="signal"></i><i data-lucide="wifi"></i><i data-lucide="battery-full"></i></div>
+            </div>
+            <div class="screen-inner">
+              <div class="topline">
+                <div class="icon-btn"><i data-lucide="arrow-left"></i></div>
+                <span class="pill">43 项 · 18 组</span>
+              </div>
+              <h2 class="screen-title">相似回忆</h2>
+              <p class="screen-sub">系统只负责分组，最终保留权仍在你手里。</p>
+              <div class="similar-groups">
+                <div class="similar-card active-card">
+                  <div class="similar-photos">
+                    <div class="photo p7503"></div><div class="photo p7504"></div><div class="photo p7505"></div>
+                  </div>
+                  <div class="similar-meta">
+                    <div><strong>长夜月 · 连拍</strong><span>6 张 · 10月18日</span></div>
+                    <div class="recommend-chip">建议保留 1 张</div>
+                  </div>
+                </div>
+                <div class="similar-card">
+                  <div class="similar-photos">
+                    <div class="photo p7498"></div><div class="photo p7503"></div><div class="photo p7504"></div>
+                  </div>
+                  <div class="similar-meta">
+                    <div><strong>雨夜截图</strong><span>4 张 · 10月21日</span></div>
+                    <div class="recommend-chip">有 2 张重复</div>
+                  </div>
+                </div>
+                <div class="similar-card">
+                  <div class="similar-photos">
+                    <div class="photo p7505"></div><div class="photo p7504"></div><div class="photo p7498"></div>
+                  </div>
+                  <div class="similar-meta">
+                    <div><strong>紫花与伞骨</strong><span>3 张 · 10月26日</span></div>
+                    <div class="recommend-chip">建议保留 2 张</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="home-ind"></div>
+          </div>
+        </div>
+        <div class="ev-caption"><strong>相似内容</strong><span>先分组，再决定</span></div>
+      </article>
+
+      <article class="ev-chip">
+        <div class="ev-stage">
+          <div class="screen">
+            <div class="ios-status">
+              <span class="time">21:17</span>
+              <div class="sys"><i data-lucide="signal"></i><i data-lucide="wifi"></i><i data-lucide="battery-full"></i></div>
+            </div>
+            <div class="screen-inner">
+              <div class="topline">
+                <div class="icon-btn"><i data-lucide="arrow-left"></i></div>
+                <span class="pill">1 / 6</span>
+              </div>
+              <h2 class="screen-title">保留哪一张？</h2>
+              <p class="screen-sub">第一张更清晰，主体和伞骨都完整。</p>
+              <div class="compare-stage">
+                <div class="primary-photo photo p7503"></div>
+                <div class="compare-thumbs">
+                  <div class="photo p7503 selected"></div>
+                  <div class="photo p7505"></div>
+                  <div class="photo p7504"></div>
+                </div>
+              </div>
+              <div class="compare-reasons">
+                <span>清晰度更高</span><span>主体完整</span><span>无明显遮挡</span>
+              </div>
+              <div class="bottom-actions">
+                <div class="btn secondary"><i data-lucide="folder-heart"></i>移动</div>
+                <div class="btn"><i data-lucide="check"></i>保留这张</div>
+              </div>
+            </div>
+            <div class="home-ind"></div>
+          </div>
+        </div>
+        <div class="ev-caption"><strong>相似对比</strong><span>保留最值得的一张</span></div>
+      </article>
+
+      <article class="ev-chip">
+        <div class="ev-stage">
+          <div class="screen dark">
+            <div class="ios-status">
+              <span class="time">21:17</span>
+              <div class="sys"><i data-lucide="signal"></i><i data-lucide="wifi"></i><i data-lucide="battery-full"></i></div>
+            </div>
+            <div class="delete-screen">
+              <div class="topline">
+                <div class="icon-btn"><i data-lucide="arrow-left"></i></div>
+                <span class="pill">可随时移出</span>
+              </div>
+              <div class="delete-summary">
+                <div><h2>待删除</h2><p>下一次系统确认后才会移除</p></div>
+                <div class="size">186 MB</div>
+              </div>
+              <div class="delete-grid">
+                <div class="delete-tile photo p7503"><span class="x"><i data-lucide="x"></i></span></div>
+                <div class="delete-tile photo p7504"><span class="x"><i data-lucide="x"></i></span></div>
+                <div class="delete-tile photo p7505"><span class="x"><i data-lucide="x"></i></span></div>
+                <div class="delete-tile photo p7498"><span class="x"><i data-lucide="x"></i></span></div>
+                <div class="delete-tile photo p7503"><span class="x"><i data-lucide="x"></i></span></div>
+                <div class="delete-tile photo p7504"><span class="x"><i data-lucide="x"></i></span></div>
+              </div>
+              <div class="delete-note"><i data-lucide="info"></i>应用不会直接清空相册。点按删除后，iOS 会再次弹出系统确认；删除项可在“最近删除”中恢复。</div>
+              <div class="delete-actions">
+                <div class="btn secondary"><i data-lucide="undo-2"></i>移出 2 项</div>
+                <div class="btn danger"><i data-lucide="trash-2"></i>确认删除 14 项</div>
+              </div>
+            </div>
+            <div class="home-ind"></div>
+          </div>
+        </div>
+        <div class="ev-caption"><strong>待删除区</strong><span>删除必须二次确认</span></div>
+      </article>
+    </div>
+  </section>
+
+  <section class="ev-panel" id="ev-panel-albums" role="tabpanel" aria-labelledby="ev-tab-albums" hidden>
+    <div class="ev-group-head">
+      <h2>整理之后，让回忆真正有归处</h2>
+      <p>相簿选择 → 相簿总览 → 隐私与反馈</p>
+    </div>
+    <div class="ev-grid">
+      <article class="ev-chip">
+        <div class="ev-stage">
+          <div class="screen">
+            <div class="ios-status" style="position:absolute;left:0;right:0;color:#fff">
+              <span class="time">21:17</span>
+              <div class="sys"><i data-lucide="signal"></i><i data-lucide="wifi"></i><i data-lucide="battery-full"></i></div>
+            </div>
+            <div class="picker-backdrop"></div>
+            <div class="picker-sheet">
+              <div class="grab"></div>
+              <div class="sheet-head"><h2>放入相簿</h2><div class="icon-btn"><i data-lucide="x"></i></div></div>
+              <div class="search-pill"><i data-lucide="search"></i>搜索相簿</div>
+              <div class="album-option">
+                <div class="thumb photo p7503"></div><div><strong>长夜月</strong><span>84 张 · 默认归处</span></div><span class="check"><i data-lucide="check"></i></span>
+              </div>
+              <div class="album-option">
+                <div class="thumb photo p7504"></div><div><strong>旅行</strong><span>216 张</span></div>
+              </div>
+              <div class="album-option">
+                <div class="thumb photo p7505"></div><div><strong>灵感截图</strong><span>47 张</span></div>
+              </div>
+              <div class="album-option">
+                <div class="thumb photo p7498"></div><div><strong>新建相簿</strong><span>为这组回忆命名</span></div><div class="icon-btn"><i data-lucide="plus"></i></div>
+              </div>
+              <div class="btn"><i data-lucide="folder-plus"></i>放入“长夜月”</div>
+            </div>
+            <div class="home-ind" style="color:#1b171f"></div>
+          </div>
+        </div>
+        <div class="ev-caption"><strong>相簿选择</strong><span>下滑之后选择归处</span></div>
+      </article>
+
+      <article class="ev-chip">
+        <div class="ev-stage">
+          <div class="screen">
+            <div class="ios-status">
+              <span class="time">21:17</span>
+              <div class="sys"><i data-lucide="signal"></i><i data-lucide="wifi"></i><i data-lucide="battery-full"></i></div>
+            </div>
+            <div class="screen-inner">
+              <div class="topline">
+                <div><h2 class="screen-title">相簿</h2><p class="screen-sub">回忆有归处，也有新的秩序。</p></div>
+                <div class="icon-btn"><i data-lucide="plus"></i></div>
+              </div>
+              <div class="albums-bento">
+                <div class="album-block wide">
+                  <div class="cover photo p7503"></div>
+                  <div class="label"><strong>长夜月</strong><span>84 张 · 最近更新</span></div>
+                </div>
+                <div class="album-block">
+                  <div class="cover photo p7505"></div>
+                  <div class="label"><strong>旅行</strong><span>216 张</span></div>
+                </div>
+                <div class="album-block album-small-copy">
+                  <strong>47</strong>
+                  <span>张灵感截图<br />等待归档</span>
+                </div>
+              </div>
+              <div class="suggestion">
+                <div class="suggestion-row">
+                  <div class="icon"><i data-lucide="git-merge"></i></div>
+                  <div><strong>3 组相簿可能重复</strong><span>合并后更容易找到同一段回忆</span></div>
+                  <i class="go" data-lucide="chevron-right"></i>
+                </div>
+                <div class="suggestion-row">
+                  <div class="icon"><i data-lucide="folder-heart"></i></div>
+                  <div><strong>2 个相簿可以重命名</strong><span>“新建相簿 3”里仍有 28 张照片</span></div>
+                  <i class="go" data-lucide="chevron-right"></i>
+                </div>
+              </div>
+            </div>
+            <nav class="nav light" aria-label="主导航">
+              <div class="nav-item"><i data-lucide="moon-star"></i></div>
+              <div class="nav-item"><i data-lucide="calendar-days"></i></div>
+              <div class="nav-item on"><i data-lucide="images"></i></div>
+              <div class="nav-item"><i data-lucide="user-round"></i></div>
+            </nav>
+            <div class="home-ind"></div>
+          </div>
+        </div>
+        <div class="ev-caption"><strong>相簿</strong><span>整理建议与合并</span></div>
+      </article>
+
+      <article class="ev-chip">
+        <div class="ev-stage">
+          <div class="screen">
+            <div class="ios-status">
+              <span class="time">21:17</span>
+              <div class="sys"><i data-lucide="signal"></i><i data-lucide="wifi"></i><i data-lucide="battery-full"></i></div>
+            </div>
+            <div class="screen-inner">
+              <div class="topline">
+                <div><h2 class="screen-title">我的</h2><p class="screen-sub">整理习惯与本地数据。</p></div>
+                <div class="icon-btn"><i data-lucide="settings-2"></i></div>
+              </div>
+              <div class="profile-hero">
+                <div class="motif motif-umbrella"></div>
+                <span>累计释放空间</span>
+                <div class="big">12.6 GB</div>
+                <p>你在 8 个月里整理了 2,486 张照片和视频。</p>
+                <div class="profile-stats">
+                  <div><strong>2,486</strong><span>已整理</span></div>
+                  <div><strong>31</strong><span>清理轮次</span></div>
+                  <div><strong>12</strong><span>连续天数</span></div>
+                </div>
+              </div>
+              <div class="settings-list">
+                <div class="setting-row">
+                  <div class="icon"><i data-lucide="hand"></i></div><strong>手势与触感反馈</strong><span class="value">已开启</span>
+                </div>
+                <div class="setting-row">
+                  <div class="icon"><i data-lucide="scan-search"></i></div><strong>相似内容识别</strong><span class="value">自动</span>
+                </div>
+                <div class="setting-row">
+                  <div class="icon"><i data-lucide="shield-check"></i></div><strong>隐私与本机处理</strong><span class="value">仅本机</span>
+                </div>
+                <div class="setting-row">
+                  <div class="icon"><i data-lucide="history"></i></div><strong>最近移动与撤销</strong><span class="value">查看</span>
+                </div>
+              </div>
+            </div>
+            <nav class="nav light" aria-label="主导航">
+              <div class="nav-item"><i data-lucide="moon-star"></i></div>
+              <div class="nav-item"><i data-lucide="calendar-days"></i></div>
+              <div class="nav-item"><i data-lucide="images"></i></div>
+              <div class="nav-item on"><i data-lucide="user-round"></i></div>
+            </nav>
+            <div class="home-ind"></div>
+          </div>
+        </div>
+        <div class="ev-caption"><strong>我的</strong><span>隐私、反馈与历史</span></div>
+      </article>
+    </div>
+  </section>
+
+  <script>
+    (() => {
+      const root = document.getElementById("evernight-page-previews");
+      const tabs = [...root.querySelectorAll(".ev-tab")];
+      const panels = [...root.querySelectorAll(".ev-panel")];
+      const glyphs = {
+        signal: "▂▄▆",
+        wifi: "◔",
+        "battery-full": "▰",
+        "image-plus": "＋",
+        "shield-check": "✓",
+        "settings-2": "⚙",
+        "arrow-left": "←",
+        sparkles: "✦",
+        "moon-star": "☾",
+        "calendar-days": "31",
+        images: "▦",
+        "user-round": "●",
+        search: "⌕",
+        "arrow-up": "↑",
+        "undo-2": "↶",
+        "trash-2": "删",
+        "folder-heart": "册",
+        "shield-alert": "!",
+        x: "×",
+        check: "✓",
+        "folder-plus": "＋",
+        plus: "＋",
+        "git-merge": "⑂",
+        "chevron-right": "›",
+        history: "↶",
+        hand: "☝",
+        "scan-search": "⌕",
+      };
+      root.querySelectorAll("[data-lucide]").forEach((icon) => {
+        const glyph = document.createElement("span");
+        glyph.className = "glyph";
+        glyph.setAttribute("aria-hidden", "true");
+        glyph.textContent = glyphs[icon.getAttribute("data-lucide")] || "•";
+        icon.replaceWith(glyph);
+      });
+      const setTime = () => {
+        const value = new Date().toLocaleTimeString("zh-CN", {
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: false,
+        });
+        root.querySelectorAll(".time").forEach((el) => {
+          el.textContent = value;
+        });
+      };
+      tabs.forEach((tab) => {
+        tab.addEventListener("click", () => {
+          tabs.forEach((item) => item.setAttribute("aria-selected", String(item === tab)));
+          panels.forEach((panel) => {
+            panel.hidden = panel.id !== tab.getAttribute("aria-controls");
+          });
+        });
+      });
+      setTime();
+    })();
+  </script>
+</div>

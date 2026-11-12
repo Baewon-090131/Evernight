@@ -1,0 +1,9 @@
+.finesse/
+.DS_Store
+.build/
+DerivedData/
+build/
+artifacts/
+*.xcuserstate
+xcuserdata/
+.tmp/
