@@ -25,25 +25,7 @@ ARTIFACTS_DIR="artifacts"
 mkdir -p "$ARTIFACTS_DIR"
 rm -rf "$ARCHIVE_PATH"
 
-SIGNING_ARGS=(
-  CODE_SIGNING_ALLOWED=NO
-  CODE_SIGNING_REQUIRED=NO
-  CODE_SIGN_IDENTITY=""
-  DEVELOPMENT_TEAM=""
-)
 IPA_NAME="Evernight-v0.1-Fall-Asleep-Beta-unsigned.ipa"
-
-if [[ "${SIGNED:-0}" == "1" ]]; then
-  : "${APPLE_TEAM_ID:?APPLE_TEAM_ID is required for signed builds}"
-  : "${PROFILE_UUID:?PROFILE_UUID is required for signed builds}"
-  SIGNING_ARGS=(
-    CODE_SIGN_STYLE=Manual
-    DEVELOPMENT_TEAM="$APPLE_TEAM_ID"
-    PROVISIONING_PROFILE="$PROFILE_UUID"
-    CODE_SIGN_IDENTITY="${CODE_SIGN_IDENTITY:-Apple Development}"
-  )
-  IPA_NAME="Evernight-v0.1-Fall-Asleep-Beta-signed.ipa"
-fi
 
 xcodebuild \
   archive \
@@ -52,7 +34,10 @@ xcodebuild \
   -configuration Release \
   -destination 'generic/platform=iOS' \
   -archivePath "$ARCHIVE_PATH" \
-  "${SIGNING_ARGS[@]}"
+  CODE_SIGNING_ALLOWED=NO \
+  CODE_SIGNING_REQUIRED=NO \
+  CODE_SIGN_IDENTITY="" \
+  DEVELOPMENT_TEAM=""
 
 APP_PATH="$ARCHIVE_PATH/Products/Applications/Evernight.app"
 PAYLOAD_DIR="build/Payload"

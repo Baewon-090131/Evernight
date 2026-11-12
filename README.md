@@ -44,23 +44,12 @@ bash scripts/build-ipa.sh
 
 ## GitHub Actions 构建 IPA
 
-仓库包含两个手动可运行的工作流：
+仓库只保留 `Build unsigned IPA` 工作流：
 
-1. `Build unsigned IPA`
-   - 生成未签名 IPA。
-   - 适合通过 AltStore、Sideloadly 或其他自签名工具安装。
-   - 未签名 IPA 不能直接在未经处理的真机上安装。
-
-2. `Build signed IPA`
-   - 需要配置以下 GitHub Actions Secrets：
-     - `BUILD_CERTIFICATE_BASE64`：`.p12` 证书的 Base64。
-     - `P12_PASSWORD`：证书密码。
-     - `PROVISIONING_PROFILE_BASE64`：开发或 Ad Hoc 描述文件的 Base64。
-     - `APPLE_TEAM_ID`：Apple Developer Team ID。
-   - 描述文件中必须包含测试设备的 UDID。
-   - 构建完成后从 Actions Artifacts 下载签名 IPA。
-
-未配置签名 Secrets 时请只运行未签名工作流。
+- 手动运行或推送 `v*` 标签时触发。
+- 生成未签名 IPA。
+- 适合通过 AltStore、Sideloadly 或其他自签名工具安装。
+- 未签名 IPA 不能直接在未经处理的真机上安装。
 
 ## 测试
 

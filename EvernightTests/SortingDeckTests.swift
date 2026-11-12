@@ -7,11 +7,13 @@ struct SortingDeckTests {
     func advancingMovesToNextItemAndUndoRestoresIt() throws {
         var deck = SortingDeck(assets: [asset("1"), asset("2")])
 
-        let step = try #require(deck.completeCurrent(.skip))
+        let completion = deck.completeCurrent(.skip)
+        let step = try #require(completion)
         #expect(step.asset.id == "1")
         #expect(deck.current?.id == "2")
 
-        let undone = try #require(deck.undoLastAction())
+        let undo = deck.undoLastAction()
+        let undone = try #require(undo)
         #expect(undone.asset.id == "1")
         #expect(deck.current?.id == "1")
     }
@@ -19,7 +21,8 @@ struct SortingDeckTests {
     @Test
     func moveActionCarriesAlbumIdentifier() throws {
         var deck = SortingDeck(assets: [asset("1")])
-        let step = try #require(deck.completeCurrent(.moveToAlbum("album-1")))
+        let completion = deck.completeCurrent(.moveToAlbum("album-1"))
+        let step = try #require(completion)
 
         #expect(step.action == .moveToAlbum("album-1"))
         #expect(deck.isFinished)
