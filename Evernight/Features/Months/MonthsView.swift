@@ -35,6 +35,11 @@ struct MonthsView: View {
                             monthRow(month)
                         }
                         .buttonStyle(.plain)
+                        .contextMenu {
+                            Button("重置本月进度", role: .destructive) {
+                                library.resetProgress(for: month.key)
+                            }
+                        }
                     }
 
                     if library.undatedAssetCount > 0 {
