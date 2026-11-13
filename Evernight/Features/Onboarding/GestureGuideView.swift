@@ -7,7 +7,8 @@ struct GestureGuideView: View {
         ("arrow.left", "左滑", "下一张"),
         ("arrow.uturn.backward", "右滑", "撤回上一个动作"),
         ("arrow.up", "上滑", "加入待删除区"),
-        ("arrow.down", "下滑", "放入默认相簿"),
+        ("arrow.down", "下滑", "打开相簿投放栏，松手归档"),
+        ("tray.and.arrow.down", "右上角待删除", "打开原生抽屉复核"),
         ("arrow.right.to.line", "滑轨拖到右端", "确认删除"),
     ]
 

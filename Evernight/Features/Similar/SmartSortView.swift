@@ -3,7 +3,6 @@ import SwiftUI
 struct SmartSortView: View {
     @Environment(PhotoLibraryStore.self) private var library
 
-    @State private var selectedMonth: MonthKey?
     @State private var scanTask: Task<Void, Never>?
 
     private let columns = [
@@ -21,7 +20,7 @@ struct SmartSortView: View {
 
                     if library.isScanningSimilar {
                         scanningCard
-                    } else if library.similarScanMonth == selectedMonth {
+                    } else if library.hasCompletedSimilarScan {
                         if library.similarGroups.isEmpty {
                             emptyResult
                         } else {
@@ -51,27 +50,28 @@ struct SmartSortView: View {
         .navigationTitle("智能整理")
         .toolbarBackground(.hidden, for: .navigationBar)
         .toolbar {
-            ToolbarItem(placement: .topBarLeading) {
-                monthMenu
+            ToolbarItem(placement: .topBarTrailing) {
+                Label("整个相册", systemImage: "rectangle.stack.fill")
+                    .font(AppFont.pingFang(11, weight: .semibold))
+                    .foregroundStyle(AppTheme.muted)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 7)
+                    .modifier(GlassCapsuleModifier(tint: AppTheme.red.opacity(0.16)))
             }
         }
         .task {
-            if selectedMonth == nil {
-                selectedMonth = library.latestMonth?.key
+            await library.bootstrapIfNeeded()
+            startScanIfNeeded()
+        }
+        .onChange(of: library.hasCompletedSimilarScan) { _, completed in
+            if !completed {
+                startScanIfNeeded()
             }
         }
-        .onChange(of: selectedMonth) { _, _ in
-            scanTask?.cancel()
-            scanTask = nil
-            library.clearSimilarResults()
-        }
-        .onChange(of: library.latestMonth?.key) { _, latest in
-            if selectedMonth == nil {
-                selectedMonth = latest
+        .onChange(of: library.isScanningSimilar) { _, isScanning in
+            if !isScanning {
+                startScanIfNeeded()
             }
-        }
-        .onDisappear {
-            scanTask?.cancel()
         }
     }
 
@@ -81,35 +81,9 @@ struct SmartSortView: View {
                 .font(AppFont.pingFang(30, weight: .semibold))
                 .tracking(-0.9)
                 .foregroundStyle(AppTheme.ink)
-            Text("在本机比较连拍、重复与近似照片，不会上传相册内容。")
+            Text("进入本页后自动扫描整个相册，在本机比较连拍、重复与近似照片，不再逐月询问。")
                 .font(AppFont.subheadline)
                 .foregroundStyle(AppTheme.muted)
-        }
-    }
-
-    private var monthMenu: some View {
-        Menu {
-            ForEach(library.months) { month in
-                Button {
-                    selectedMonth = month.key
-                } label: {
-                    Label(
-                        month.key.title,
-                        systemImage: selectedMonth == month.key ? "checkmark" : "calendar"
-                    )
-                }
-            }
-        } label: {
-            HStack(spacing: 6) {
-                Text(selectedMonth?.shortTitle ?? "选择月份")
-                Image(systemName: "chevron.down")
-                    .font(AppFont.pingFang(10, weight: .bold))
-            }
-            .font(AppFont.pingFang(12, weight: .semibold))
-            .foregroundStyle(AppTheme.ink)
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
-            .modifier(GlassCapsuleModifier(tint: AppTheme.red.opacity(0.18)))
         }
     }
 
@@ -119,19 +93,18 @@ struct SmartSortView: View {
                 .font(AppFont.pingFang(42, weight: .light))
                 .foregroundStyle(AppTheme.brightRed)
 
-            Text("扫描 \(selectedMonth?.shortTitle ?? "当前月份") 的相似照片")
+            Text("扫描整个相册")
                 .font(AppFont.title2)
                 .foregroundStyle(AppTheme.ink)
 
-            Text("只分析当前月份中的照片。扫描在本机完成，视频和没有拍摄日期的媒体暂不参与。")
+            Text("默认只触发一次全库扫描。完成后直接显示所有相似照片分组，不需要逐月确认。")
                 .font(AppFont.body)
                 .foregroundStyle(AppTheme.muted)
                 .multilineTextAlignment(.center)
 
             PrimaryActionButton(
                 title: "开始扫描",
-                systemImage: "viewfinder",
-                isEnabled: selectedMonth != nil
+                systemImage: "viewfinder"
             ) {
                 startScan()
             }
@@ -150,21 +123,17 @@ struct SmartSortView: View {
             ProgressView()
                 .controlSize(.large)
                 .tint(AppTheme.brightRed)
-            Text("正在比较照片特征…")
+            Text("正在扫描整个相册…")
                 .font(AppFont.body)
                 .foregroundStyle(AppTheme.ink)
-            Text("首次扫描需要读取缩略图，完成后即可快速打开分组。")
+            Text("首次扫描需要读取缩略图。离开本页后扫描会继续，完成后自动刷新分组。")
                 .font(AppFont.caption)
                 .foregroundStyle(AppTheme.muted)
-
-            Button("取消扫描") {
-                scanTask?.cancel()
-            }
-            .font(AppFont.caption)
-            .foregroundStyle(AppTheme.brightRed)
+                .multilineTextAlignment(.center)
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 44)
+        .padding(.horizontal, 24)
         .background(AppTheme.surface, in: RoundedRectangle(cornerRadius: 24))
     }
 
@@ -173,7 +142,7 @@ struct SmartSortView: View {
             ContentUnavailableView(
                 "没有发现相似照片",
                 systemImage: "checkmark.seal",
-                description: Text("这个月份里的照片差异都比较明显。")
+                description: Text("整个相册中的照片差异都比较明显。")
             )
             .foregroundStyle(AppTheme.ink)
 
@@ -187,7 +156,7 @@ struct SmartSortView: View {
 
     private var resultSummary: some View {
         HStack {
-            Text("发现 \(library.similarGroups.count) 组可能重复的照片")
+            Text("整个相册发现 \(library.similarGroups.count) 组可能重复的照片")
                 .font(AppFont.pingFang(14, weight: .semibold))
                 .foregroundStyle(AppTheme.ink)
             Spacer()
@@ -205,7 +174,8 @@ struct SmartSortView: View {
                 ForEach(Array(group.assets.prefix(3))) { asset in
                     PhotoThumbnailView(
                         asset: asset,
-                        targetSize: CGSize(width: 180, height: 180)
+                        targetSize: CGSize(width: 540, height: 660),
+                        contentMode: .fit
                     )
                     .frame(maxWidth: .infinity)
                     .aspectRatio(0.82, contentMode: .fit)
@@ -236,11 +206,21 @@ struct SmartSortView: View {
         }
     }
 
+    private func startScanIfNeeded() {
+        guard
+            library.isAuthorized,
+            !library.hasCompletedSimilarScan,
+            !library.isScanningSimilar
+        else {
+            return
+        }
+        startScan()
+    }
+
     private func startScan() {
-        guard let selectedMonth else { return }
-        scanTask?.cancel()
+        guard scanTask == nil else { return }
         scanTask = Task {
-            await library.scanSimilar(in: selectedMonth)
+            await library.scanWholeLibrary()
             scanTask = nil
         }
     }

@@ -18,6 +18,7 @@ struct MediaPlaybackView: View {
     let videoAutoplayEnabled: Bool
     let livePhotoAutoplayEnabled: Bool
     let isPlaybackAllowed: Bool
+    var contentMode: ContentMode = .fill
 
     var body: some View {
         Group {
@@ -27,17 +28,23 @@ struct MediaPlaybackView: View {
                     asset: asset,
                     targetSize: targetSize,
                     autoplayEnabled: videoAutoplayEnabled,
-                    isPlaybackAllowed: isPlaybackAllowed
+                    isPlaybackAllowed: isPlaybackAllowed,
+                    contentMode: contentMode
                 )
             case .photo where asset.isLivePhoto:
                 LivePhotoAssetPlaybackView(
                     asset: asset,
                     targetSize: targetSize,
                     autoplayEnabled: livePhotoAutoplayEnabled,
-                    isPlaybackAllowed: isPlaybackAllowed
+                    isPlaybackAllowed: isPlaybackAllowed,
+                    contentMode: contentMode
                 )
             case .photo, .other:
-                PhotoThumbnailView(asset: asset, targetSize: targetSize)
+                PhotoThumbnailView(
+                    asset: asset,
+                    targetSize: targetSize,
+                    contentMode: contentMode
+                )
             }
         }
     }
@@ -51,6 +58,7 @@ private struct VideoAssetPlaybackView: View {
     let targetSize: CGSize
     let autoplayEnabled: Bool
     let isPlaybackAllowed: Bool
+    let contentMode: ContentMode
 
     @State private var player: AVPlayer?
     @State private var requestID: PHImageRequestID?
@@ -64,7 +72,11 @@ private struct VideoAssetPlaybackView: View {
             if let player {
                 VideoPlayer(player: player)
             } else {
-                PhotoThumbnailView(asset: asset, targetSize: targetSize)
+                PhotoThumbnailView(
+                    asset: asset,
+                    targetSize: targetSize,
+                    contentMode: contentMode
+                )
             }
         }
         .onAppear {
@@ -131,6 +143,7 @@ private struct LivePhotoAssetPlaybackView: View {
     let targetSize: CGSize
     let autoplayEnabled: Bool
     let isPlaybackAllowed: Bool
+    let contentMode: ContentMode
 
     @State private var livePhoto: PHLivePhoto?
     @State private var requestID: PHImageRequestID?
@@ -153,7 +166,11 @@ private struct LivePhotoAssetPlaybackView: View {
                 .accessibilityLabel("实况照片")
                 .accessibilityHint("按住播放实况")
             } else {
-                PhotoThumbnailView(asset: asset, targetSize: targetSize)
+                PhotoThumbnailView(
+                    asset: asset,
+                    targetSize: targetSize,
+                    contentMode: contentMode
+                )
             }
         }
         .onAppear {

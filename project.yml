@@ -30,8 +30,8 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.evernight.gallerysorter
         PRODUCT_NAME: Evernight
-        MARKETING_VERSION: "0.1"
-        CURRENT_PROJECT_VERSION: "1"
+        MARKETING_VERSION: "0.2"
+        CURRENT_PROJECT_VERSION: "2"
         GENERATE_INFOPLIST_FILE: YES
         INFOPLIST_KEY_CFBundleDisplayName: "长夜月"
         INFOPLIST_KEY_NSPhotoLibraryUsageDescription: "Evernight 需要读取照片和视频，帮助你在本机按月整理相册。"

@@ -11,6 +11,7 @@ struct SortingDeckTests {
         let step = try #require(completion)
         #expect(step.asset.id == "1")
         #expect(deck.current?.id == "2")
+        #expect(deck.previousStep == step)
 
         let undo = deck.undoLastAction()
         let undone = try #require(undo)

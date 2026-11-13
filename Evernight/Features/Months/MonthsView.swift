@@ -43,7 +43,7 @@ struct MonthsView: View {
                     }
 
                     if library.undatedAssetCount > 0 {
-                        Text("另有 \(library.undatedAssetCount) 个媒体没有拍摄日期，v0.1 暂不纳入按月整理。")
+                        Text("另有 \(library.undatedAssetCount) 个媒体没有拍摄日期，v0.2 暂不纳入按月整理。")
                             .font(AppFont.caption)
                             .foregroundStyle(AppTheme.muted)
                             .frame(maxWidth: .infinity, alignment: .leading)

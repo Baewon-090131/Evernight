@@ -35,7 +35,7 @@ jobs:
       - name: Upload IPA
         uses: actions/upload-artifact@v4
         with:
-          name: Evernight-v0.1-Fall-Asleep-Beta-unsigned
+          name: Evernight-v0.2-Get-Up-unsigned
           path: artifacts/*.ipa
           if-no-files-found: error
 

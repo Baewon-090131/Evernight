@@ -42,8 +42,9 @@ final class PhotoLibraryStore {
     private(set) var processedAssetIDs: Set<String> = []
     private(set) var similarGroups: [SimilarGroup] = []
     private(set) var isScanningSimilar = false
-    private(set) var similarScanMonth: MonthKey?
+    private(set) var hasCompletedSimilarScan = false
     private(set) var recentMoves: [RecentMoveRecord] = []
+    private var similarScanSignature: String?
 
     var mediaScope: MediaScope = .all
     var targetAlbumID: String? {
@@ -188,8 +189,12 @@ final class PhotoLibraryStore {
 
         assets = loadedAssets
         albums = loadedAlbums
-        similarGroups = []
-        similarScanMonth = nil
+        let loadedSignature = Self.makeSimilarScanSignature(for: loadedAssets)
+        if loadedSignature != similarScanSignature {
+            similarGroups = []
+            hasCompletedSimilarScan = false
+            similarScanSignature = nil
+        }
         pendingDeleteIDs.formIntersection(Set(loadedAssets.map(\.id)))
         processedAssetIDs.formIntersection(Set(loadedAssets.map(\.id)))
         persistProcessedAssets()
@@ -307,13 +312,13 @@ final class PhotoLibraryStore {
             guard let request = PHAssetCollectionChangeRequest(for: collection) else { return }
             request.addAssets(fetchResult)
         }
-        adjustAlbumCount(albumID, by: 1)
+        adjustAlbumCount(albumID, by: 1, coverAssetID: asset.id)
         recentMoves.insert(
             RecentMoveRecord(
                 id: UUID().uuidString,
                 assetID: asset.id,
                 albumID: albumID,
-                albumTitle: targetAlbum?.title ?? "相簿",
+                albumTitle: albums.first(where: { $0.id == albumID })?.title ?? "相簿",
                 movedAt: .now
             ),
             at: 0
@@ -456,27 +461,34 @@ final class PhotoLibraryStore {
         targetAlbumID = suggestion.target.id
     }
 
-    func scanSimilar(in month: MonthKey) async {
+    func scanWholeLibrary() async {
         guard !isScanningSimilar else { return }
 
         isScanningSimilar = true
-        similarScanMonth = month
         similarGroups = []
         defer { isScanningSimilar = false }
 
+        let signature = Self.makeSimilarScanSignature(for: assets)
         let source = assets.filter {
-            $0.monthKey == month
-                && $0.kind == .photo
+            $0.kind == .photo
                 && !pendingDeleteIDs.contains($0.id)
         }
         let result = await SimilarityScanner.scan(source)
-        guard similarScanMonth == month, !Task.isCancelled else { return }
+        guard
+            !Task.isCancelled,
+            Self.makeSimilarScanSignature(for: assets) == signature
+        else {
+            return
+        }
         similarGroups = result
+        similarScanSignature = signature
+        hasCompletedSimilarScan = true
     }
 
     func clearSimilarResults() {
         similarGroups = []
-        similarScanMonth = nil
+        hasCompletedSimilarScan = false
+        similarScanSignature = nil
     }
 
     func removeSimilarGroup(_ id: String) {
@@ -511,7 +523,8 @@ final class PhotoLibraryStore {
         recentMoves.removeAll { ids.contains($0.assetID) }
         persistRecentMoves()
         similarGroups = []
-        similarScanMonth = nil
+        hasCompletedSimilarScan = false
+        similarScanSignature = nil
         statistics.deletedItemCount += receipt.count
         statistics.estimatedFreedBytes += receipt.estimatedBytes
         persistStatistics()
@@ -521,9 +534,10 @@ final class PhotoLibraryStore {
     func requestThumbnail(
         for assetID: String,
         targetSize: CGSize,
+        contentMode: PHImageContentMode = .aspectFill,
         completion: @escaping @MainActor (UIImage?) -> Void
     ) -> PHImageRequestID? {
-        let cacheKey = assetID as NSString
+        let cacheKey = "\(assetID)-\(Int(targetSize.width))x\(Int(targetSize.height))-\(contentMode == .aspectFill ? "fill" : "fit")" as NSString
         if let image = imageCache.object(forKey: cacheKey) {
             completion(image)
             return nil
@@ -542,14 +556,17 @@ final class PhotoLibraryStore {
         let options = PHImageRequestOptions()
         options.deliveryMode = .highQualityFormat
         options.isNetworkAccessAllowed = true
-        options.resizeMode = .fast
+        options.resizeMode = .exact
+        options.version = .current
 
         return imageManager.requestImage(
             for: asset,
             targetSize: targetSize,
-            contentMode: .aspectFill,
+            contentMode: contentMode,
             options: options
-        ) { [weak self] image, _ in
+        ) { [weak self] image, info in
+            let isDegraded = (info?[PHImageResultIsDegradedKey] as? Bool) ?? false
+            guard !isDegraded else { return }
             Task { @MainActor in
                 if let image {
                     let cost = (image.cgImage?.width ?? 0) * (image.cgImage?.height ?? 0) * 4
@@ -677,13 +694,26 @@ final class PhotoLibraryStore {
         UserDefaults.standard.set(data, forKey: recentMovesKey)
     }
 
-    private func adjustAlbumCount(_ albumID: String, by delta: Int) {
+    private static func makeSimilarScanSignature(for assets: [PhotoAsset]) -> String {
+        var hasher = Hasher()
+        for id in assets.filter({ $0.kind == .photo }).map(\.id).sorted() {
+            hasher.combine(id)
+        }
+        return String(hasher.finalize())
+    }
+
+    private func adjustAlbumCount(
+        _ albumID: String,
+        by delta: Int,
+        coverAssetID: String? = nil
+    ) {
         guard let index = albums.firstIndex(where: { $0.id == albumID }) else { return }
         let album = albums[index]
         albums[index] = PhotoAlbum(
             id: album.id,
             title: album.title,
-            assetCount: max(0, album.assetCount + delta)
+            assetCount: max(0, album.assetCount + delta),
+            coverAssetID: album.coverAssetID ?? coverAssetID
         )
     }
 

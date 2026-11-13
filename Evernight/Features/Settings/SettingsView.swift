@@ -92,9 +92,9 @@ struct SettingsView: View {
                 }
 
                 Section("版本") {
-                    LabeledContent("版本号", value: "0.1")
-                    LabeledContent("发布名称", value: "Fall Asleep Beta")
-                    LabeledContent("构建", value: "1")
+                    LabeledContent("版本号", value: AppRelease.versionNumber)
+                    LabeledContent("发布名称", value: AppRelease.releaseName)
+                    LabeledContent("构建", value: AppRelease.buildNumber)
                 }
             }
             .scrollContentBackground(.hidden)

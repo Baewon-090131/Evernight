@@ -57,11 +57,21 @@ nonisolated enum PhotoLibraryReader {
 
         result.enumerateObjects { collection, _, _ in
             let count = PHAsset.fetchAssets(in: collection, options: nil).count
+            let coverOptions = PHFetchOptions()
+            coverOptions.fetchLimit = 1
+            coverOptions.sortDescriptors = [
+                NSSortDescriptor(key: "creationDate", ascending: false)
+            ]
+            let coverAssetID = PHAsset.fetchAssets(
+                in: collection,
+                options: coverOptions
+            ).firstObject?.localIdentifier
             albums.append(
                 PhotoAlbum(
                     id: collection.localIdentifier,
                     title: collection.localizedTitle ?? "未命名相簿",
-                    assetCount: count
+                    assetCount: count,
+                    coverAssetID: coverAssetID
                 )
             )
         }

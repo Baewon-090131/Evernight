@@ -45,7 +45,7 @@ ARTIFACTS_DIR="artifacts"
 mkdir -p "$ARTIFACTS_DIR"
 rm -rf "$ARCHIVE_PATH"
 
-IPA_NAME="Evernight-v0.1-Fall-Asleep-Beta-unsigned.ipa"
+IPA_NAME="Evernight-v0.2-Get-Up-unsigned.ipa"
 
 run_xcodebuild \
   archive \

@@ -38,6 +38,10 @@ nonisolated struct SortingDeck: Sendable {
         cursor >= assets.count
     }
 
+    var previousStep: SortingStep? {
+        history.last
+    }
+
     mutating func replaceAssets(_ newAssets: [PhotoAsset]) {
         assets = newAssets
         history = []

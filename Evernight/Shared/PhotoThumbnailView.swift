@@ -12,6 +12,17 @@ struct PhotoThumbnailView: View {
     @State private var image: UIImage?
     @State private var requestID: PHImageRequestID?
 
+    private var requestContentMode: PHImageContentMode {
+        switch contentMode {
+        case .fill:
+            return .aspectFill
+        case .fit:
+            return .aspectFit
+        @unknown default:
+            return .aspectFill
+        }
+    }
+
     var body: some View {
         ZStack {
             AppTheme.raisedSurface
@@ -40,7 +51,8 @@ struct PhotoThumbnailView: View {
         guard image == nil, requestID == nil else { return }
         requestID = library.requestThumbnail(
             for: asset.id,
-            targetSize: targetSize
+            targetSize: targetSize,
+            contentMode: requestContentMode
         ) { loadedImage in
             image = loadedImage
             requestID = nil

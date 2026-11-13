@@ -125,6 +125,19 @@ nonisolated struct PhotoAlbum: Identifiable, Hashable, Sendable {
     let id: String
     let title: String
     let assetCount: Int
+    let coverAssetID: String?
+
+    init(
+        id: String,
+        title: String,
+        assetCount: Int,
+        coverAssetID: String? = nil
+    ) {
+        self.id = id
+        self.title = title
+        self.assetCount = assetCount
+        self.coverAssetID = coverAssetID
+    }
 }
 
 nonisolated struct PhotoMonth: Identifiable, Hashable, Sendable {
