@@ -185,7 +185,7 @@ private nonisolated struct Fingerprint: Sendable {
     let aspectRatio: Double
 }
 
-private final class FingerprintGate: @unchecked Sendable {
+private nonisolated final class FingerprintGate: @unchecked Sendable {
     private let lock = NSLock()
     private var continuation: CheckedContinuation<Fingerprint?, Never>?
 
