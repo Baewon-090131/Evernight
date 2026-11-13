@@ -31,6 +31,9 @@ struct SettingsView: View {
                     LabeledContent("可访问媒体", value: "\(library.assets.count)")
                     LabeledContent("用户相簿", value: "\(library.albums.count)")
                     LabeledContent("默认归档相簿", value: library.targetAlbum?.title ?? "未选择")
+                    NavigationLink("最近移动与撤销") {
+                        RecentMovesView()
+                    }
                     NavigationLink("管理相簿") {
                         AlbumsView()
                     }

@@ -41,6 +41,7 @@ final class PhotoLibraryStore {
     private(set) var similarGroups: [SimilarGroup] = []
     private(set) var isScanningSimilar = false
     private(set) var similarScanMonth: MonthKey?
+    private(set) var recentMoves: [RecentMoveRecord] = []
 
     var mediaScope: MediaScope = .all
     var targetAlbumID: String? {
@@ -53,6 +54,7 @@ final class PhotoLibraryStore {
     private let imageManager = PHCachingImageManager()
     private let statisticsKey = "evernight.sortStatistics"
     private let processedKey = "evernight.processedAssetIDs"
+    private let recentMovesKey = "evernight.recentMoves"
     private static let targetAlbumKey = "evernight.targetAlbumID"
 
     init() {
@@ -65,6 +67,12 @@ final class PhotoLibraryStore {
             statistics = saved
         }
         processedAssetIDs = Set(UserDefaults.standard.stringArray(forKey: processedKey) ?? [])
+        if
+            let data = UserDefaults.standard.data(forKey: recentMovesKey),
+            let saved = try? JSONDecoder().decode([RecentMoveRecord].self, from: data)
+        {
+            recentMoves = saved
+        }
         targetAlbumID = UserDefaults.standard.string(forKey: Self.targetAlbumKey)
     }
 
@@ -183,6 +191,11 @@ final class PhotoLibraryStore {
         pendingDeleteIDs.formIntersection(Set(loadedAssets.map(\.id)))
         processedAssetIDs.formIntersection(Set(loadedAssets.map(\.id)))
         persistProcessedAssets()
+        recentMoves.removeAll { move in
+            !loadedAssets.contains { $0.id == move.assetID }
+                || !loadedAlbums.contains { $0.id == move.albumID }
+        }
+        persistRecentMoves()
         if let targetAlbumID, !loadedAlbums.contains(where: { $0.id == targetAlbumID }) {
             self.targetAlbumID = nil
         }
@@ -293,6 +306,18 @@ final class PhotoLibraryStore {
             request.addAssets(fetchResult)
         }
         adjustAlbumCount(albumID, by: 1)
+        recentMoves.insert(
+            RecentMoveRecord(
+                id: UUID().uuidString,
+                assetID: asset.id,
+                albumID: albumID,
+                albumTitle: targetAlbum?.title ?? "相簿",
+                movedAt: .now
+            ),
+            at: 0
+        )
+        recentMoves = Array(recentMoves.prefix(50))
+        persistRecentMoves()
     }
 
     func remove(_ asset: PhotoAsset, from albumID: String) async throws {
@@ -311,6 +336,10 @@ final class PhotoLibraryStore {
             request.removeAssets(fetchResult)
         }
         adjustAlbumCount(albumID, by: -1)
+        recentMoves.removeAll {
+            $0.assetID == asset.id && $0.albumID == albumID
+        }
+        persistRecentMoves()
     }
 
     @discardableResult
@@ -365,6 +394,8 @@ final class PhotoLibraryStore {
             PHAssetCollectionChangeRequest.deleteAssetCollections(fetchResult)
         }
         albums = await PhotoLibraryReader.fetchAlbums()
+        recentMoves.removeAll { $0.albumID == album.id }
+        persistRecentMoves()
         if targetAlbumID == album.id {
             targetAlbumID = nil
         }
@@ -408,6 +439,18 @@ final class PhotoLibraryStore {
             PHAssetCollectionChangeRequest.deleteAssetCollections(sourceFetchResult)
         }
         albums = await PhotoLibraryReader.fetchAlbums()
+        let sourceIDs = Set(suggestion.sources.map(\.id))
+        recentMoves = recentMoves.map { move in
+            guard sourceIDs.contains(move.albumID) else { return move }
+            return RecentMoveRecord(
+                id: move.id,
+                assetID: move.assetID,
+                albumID: suggestion.target.id,
+                albumTitle: suggestion.target.title,
+                movedAt: move.movedAt
+            )
+        }
+        persistRecentMoves()
         targetAlbumID = suggestion.target.id
     }
 
@@ -463,6 +506,8 @@ final class PhotoLibraryStore {
         assets.removeAll { ids.contains($0.id) }
         processedAssetIDs.subtract(ids)
         persistProcessedAssets()
+        recentMoves.removeAll { ids.contains($0.assetID) }
+        persistRecentMoves()
         similarGroups = []
         similarScanMonth = nil
         statistics.deletedItemCount += receipt.count
@@ -536,6 +581,20 @@ final class PhotoLibraryStore {
         persistStatistics()
     }
 
+    func undoRecentMove(_ record: RecentMoveRecord) async throws {
+        guard let asset = assets.first(where: { $0.id == record.assetID }) else {
+            recentMoves.removeAll { $0.id == record.id }
+            persistRecentMoves()
+            throw PhotoLibraryError.missingAsset
+        }
+        try await remove(asset, from: record.albumID)
+    }
+
+    func clearRecentMoves() {
+        recentMoves = []
+        persistRecentMoves()
+    }
+
     private func persistStatistics() {
         guard let data = try? JSONEncoder().encode(statistics) else { return }
         UserDefaults.standard.set(data, forKey: statisticsKey)
@@ -543,6 +602,11 @@ final class PhotoLibraryStore {
 
     private func persistProcessedAssets() {
         UserDefaults.standard.set(Array(processedAssetIDs), forKey: processedKey)
+    }
+
+    private func persistRecentMoves() {
+        guard let data = try? JSONEncoder().encode(recentMoves) else { return }
+        UserDefaults.standard.set(data, forKey: recentMovesKey)
     }
 
     private func adjustAlbumCount(_ albumID: String, by delta: Int) {
