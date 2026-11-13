@@ -4,7 +4,7 @@ struct SmartSortView: View {
     @Environment(PhotoLibraryStore.self) private var library
 
     @State private var selectedMonth: MonthKey?
-    @State private var didScan = false
+    @State private var scanTask: Task<Void, Never>?
 
     private let columns = [
         GridItem(.flexible(), spacing: 10),
@@ -21,23 +21,25 @@ struct SmartSortView: View {
 
                     if library.isScanningSimilar {
                         scanningCard
-                    } else if !didScan {
-                        scanInvitation
-                    } else if library.similarGroups.isEmpty {
-                        emptyResult
-                    } else {
-                        resultSummary
+                    } else if library.similarScanMonth == selectedMonth {
+                        if library.similarGroups.isEmpty {
+                            emptyResult
+                        } else {
+                            resultSummary
 
-                        LazyVGrid(columns: columns, spacing: 10) {
-                            ForEach(library.similarGroups) { group in
-                                NavigationLink {
-                                    SimilarGroupDetailView(group: group)
-                                } label: {
-                                    similarCard(group)
+                            LazyVGrid(columns: columns, spacing: 10) {
+                                ForEach(library.similarGroups) { group in
+                                    NavigationLink {
+                                        SimilarGroupDetailView(group: group)
+                                    } label: {
+                                        similarCard(group)
+                                    }
+                                    .buttonStyle(.plain)
                                 }
-                                .buttonStyle(.plain)
                             }
                         }
+                    } else {
+                        scanInvitation
                     }
                 }
                 .padding(.horizontal, 18)
@@ -59,7 +61,8 @@ struct SmartSortView: View {
             }
         }
         .onChange(of: selectedMonth) { _, _ in
-            didScan = false
+            scanTask?.cancel()
+            scanTask = nil
             library.clearSimilarResults()
         }
         .onChange(of: library.latestMonth?.key) { _, latest in
@@ -67,10 +70,8 @@ struct SmartSortView: View {
                 selectedMonth = latest
             }
         }
-        .onChange(of: library.similarScanMonth) { _, month in
-            if month == nil {
-                didScan = false
-            }
+        .onDisappear {
+            scanTask?.cancel()
         }
     }
 
@@ -132,7 +133,7 @@ struct SmartSortView: View {
                 systemImage: "viewfinder",
                 isEnabled: selectedMonth != nil
             ) {
-                Task { await scan() }
+                startScan()
             }
         }
         .frame(maxWidth: .infinity)
@@ -155,6 +156,12 @@ struct SmartSortView: View {
             Text("首次扫描需要读取缩略图，完成后即可快速打开分组。")
                 .font(AppFont.caption)
                 .foregroundStyle(AppTheme.muted)
+
+            Button("取消扫描") {
+                scanTask?.cancel()
+            }
+            .font(AppFont.caption)
+            .foregroundStyle(AppTheme.brightRed)
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 44)
@@ -171,7 +178,7 @@ struct SmartSortView: View {
             .foregroundStyle(AppTheme.ink)
 
             Button("重新扫描") {
-                Task { await scan() }
+                startScan()
             }
             .modifier(AdaptivePrimaryButtonStyle())
         }
@@ -185,7 +192,7 @@ struct SmartSortView: View {
                 .foregroundStyle(AppTheme.ink)
             Spacer()
             Button("重扫") {
-                Task { await scan() }
+                startScan()
             }
             .font(AppFont.caption)
             .foregroundStyle(AppTheme.brightRed)
@@ -229,9 +236,12 @@ struct SmartSortView: View {
         }
     }
 
-    private func scan() async {
+    private func startScan() {
         guard let selectedMonth else { return }
-        didScan = true
-        await library.scanSimilar(in: selectedMonth)
+        scanTask?.cancel()
+        scanTask = Task {
+            await library.scanSimilar(in: selectedMonth)
+            scanTask = nil
+        }
     }
 }
