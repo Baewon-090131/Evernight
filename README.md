@@ -52,7 +52,7 @@ bash scripts/build-ipa.sh
 
 仓库只保留 `Build unsigned IPA` 工作流：
 
-- 手动运行或推送 `v*` 标签时触发。
+- 手动运行、推送 `main` 分支或推送 `v*` 标签时触发。
 - 生成未签名 IPA。
 - 适合通过 AltStore、Sideloadly 或其他自签名工具安装。
 - 未签名 IPA 不能直接在未经处理的真机上安装。
