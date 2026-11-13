@@ -25,6 +25,7 @@
 - Swift 6 语言模式
 - SwiftUI
 - PhotoKit
+- 苹方字体与动态字体
 - iOS 18 最低部署版本
 - iOS 26 SDK 与 Liquid Glass 原生 API
 - XcodeGen 生成 Xcode 工程

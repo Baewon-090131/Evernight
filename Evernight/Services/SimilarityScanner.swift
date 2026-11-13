@@ -113,7 +113,12 @@ nonisolated enum SimilarityScanner {
                 targetSize: CGSize(width: 80, height: 80),
                 contentMode: .aspectFill,
                 options: options
-            ) { image, _ in
+            ) { image, info in
+                let degraded = (info?[PHImageResultIsDegradedKey] as? Bool) ?? false
+                if degraded {
+                    return
+                }
+
                 guard let image, let hash = differenceHash(image) else {
                     gate.resume(nil)
                     return

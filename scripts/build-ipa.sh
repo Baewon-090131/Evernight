@@ -32,12 +32,15 @@ run_xcodebuild() {
 }
 
 run_xcodebuild \
-  build-for-testing \
+  test \
   -project Evernight.xcodeproj \
   -scheme Evernight \
   -configuration Debug \
-  -destination 'generic/platform=iOS Simulator' \
-  -derivedDataPath build/DerivedData \
+  -destination "platform=iOS Simulator,id=$(
+    xcrun simctl list devices available -j \
+      | python3 -c 'import json,sys; data=json.load(sys.stdin); print(next(device["udid"] for devices in data["devices"].values() for device in devices if device.get("isAvailable") and "iPhone" in device.get("name", "")))'
+  )" \
+  -derivedDataPath build/TestDerivedData \
   CODE_SIGNING_ALLOWED=NO
 
 ARCHIVE_PATH="build/Evernight.xcarchive"

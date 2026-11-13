@@ -56,6 +56,8 @@ final class PhotoLibraryStore {
     private static let targetAlbumKey = "evernight.targetAlbumID"
 
     init() {
+        imageCache.countLimit = 180
+        imageCache.totalCostLimit = 96 * 1024 * 1024
         if
             let data = UserDefaults.standard.data(forKey: statisticsKey),
             let saved = try? JSONDecoder().decode(SortStatistics.self, from: data)
@@ -290,6 +292,7 @@ final class PhotoLibraryStore {
             guard let request = PHAssetCollectionChangeRequest(for: collection) else { return }
             request.addAssets(fetchResult)
         }
+        adjustAlbumCount(albumID, by: 1)
     }
 
     func remove(_ asset: PhotoAsset, from albumID: String) async throws {
@@ -307,6 +310,7 @@ final class PhotoLibraryStore {
             guard let request = PHAssetCollectionChangeRequest(for: collection) else { return }
             request.removeAssets(fetchResult)
         }
+        adjustAlbumCount(albumID, by: -1)
     }
 
     @discardableResult
@@ -501,7 +505,8 @@ final class PhotoLibraryStore {
         ) { [weak self] image, _ in
             Task { @MainActor in
                 if let image {
-                    self?.imageCache.setObject(image, forKey: cacheKey)
+                    let cost = (image.cgImage?.width ?? 0) * (image.cgImage?.height ?? 0) * 4
+                    self?.imageCache.setObject(image, forKey: cacheKey, cost: cost)
                 }
                 completion(image)
             }
@@ -538,6 +543,16 @@ final class PhotoLibraryStore {
 
     private func persistProcessedAssets() {
         UserDefaults.standard.set(Array(processedAssetIDs), forKey: processedKey)
+    }
+
+    private func adjustAlbumCount(_ albumID: String, by delta: Int) {
+        guard let index = albums.firstIndex(where: { $0.id == albumID }) else { return }
+        let album = albums[index]
+        albums[index] = PhotoAlbum(
+            id: album.id,
+            title: album.title,
+            assetCount: max(0, album.assetCount + delta)
+        )
     }
 
     private func normalizedAlbumTitle(_ title: String) -> String {

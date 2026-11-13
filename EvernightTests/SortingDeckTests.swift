@@ -49,4 +49,34 @@ struct SortingDeckTests {
             estimatedBytes: 2_000_000
         )
     }
+
+    @Test
+    func monthKeysSortChronologically() {
+        let months = [
+            MonthKey(year: 2025, month: 12),
+            MonthKey(year: 2026, month: 2),
+            MonthKey(year: 2026, month: 1)
+        ]
+
+        #expect(months.sorted() == [
+            MonthKey(year: 2025, month: 12),
+            MonthKey(year: 2026, month: 1),
+            MonthKey(year: 2026, month: 2)
+        ])
+    }
+
+    @Test
+    func statisticsRoundTripThroughCodable() throws {
+        let statistics = SortStatistics(
+            sortedItemCount: 12,
+            queuedDeleteCount: 3,
+            movedToAlbumCount: 4,
+            deletedItemCount: 2,
+            estimatedFreedBytes: 18_000_000
+        )
+        let data = try JSONEncoder().encode(statistics)
+        let decoded = try JSONDecoder().decode(SortStatistics.self, from: data)
+
+        #expect(decoded == statistics)
+    }
 }

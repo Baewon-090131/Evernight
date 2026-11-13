@@ -62,6 +62,16 @@ struct SmartSortView: View {
             didScan = false
             library.clearSimilarResults()
         }
+        .onChange(of: library.latestMonth?.key) { _, latest in
+            if selectedMonth == nil {
+                selectedMonth = latest
+            }
+        }
+        .onChange(of: library.similarScanMonth) { _, month in
+            if month == nil {
+                didScan = false
+            }
+        }
     }
 
     private var intro: some View {

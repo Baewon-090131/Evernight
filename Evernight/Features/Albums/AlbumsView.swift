@@ -3,8 +3,7 @@ import SwiftUI
 
 struct AlbumsView: View {
     @Environment(PhotoLibraryStore.self) private var library
-    @State private var showsNewAlbum = false
-    @State private var albumToRename: PhotoAlbum?
+    @State private var presentedSheet: AlbumsSheet?
     @State private var albumToDelete: PhotoAlbum?
     @State private var suggestionToMerge: AlbumMergeSuggestion?
     @State private var actionError: String?
@@ -53,7 +52,7 @@ struct AlbumsView: View {
                             }
 
                             Button {
-                                albumToRename = album
+                                presentedSheet = .rename(album)
                             } label: {
                                 Label("重命名", systemImage: "pencil")
                             }
@@ -78,19 +77,29 @@ struct AlbumsView: View {
         .navigationTitle("相簿")
         .toolbarBackground(.hidden, for: .navigationBar)
         .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
+            ToolbarItemGroup(placement: .topBarTrailing) {
                 Button {
-                    showsNewAlbum = true
+                    presentedSheet = .mergeAlbums
+                } label: {
+                    Label("合并相簿", systemImage: "arrow.triangle.merge")
+                }
+
+                Button {
+                    presentedSheet = .newAlbum
                 } label: {
                     Label("新建相簿", systemImage: "plus")
                 }
             }
         }
-        .sheet(isPresented: $showsNewAlbum) {
-            NewAlbumSheet()
-        }
-        .sheet(item: $albumToRename) { album in
-            RenameAlbumSheet(album: album)
+        .sheet(item: $presentedSheet) { sheet in
+            switch sheet {
+            case .newAlbum:
+                NewAlbumSheet()
+            case .mergeAlbums:
+                MergeAlbumsSheet()
+            case .rename(let album):
+                RenameAlbumSheet(album: album)
+            }
         }
         .confirmationDialog(
             "删除相簿？",
@@ -178,6 +187,7 @@ struct AlbumsView: View {
         defer { isWorking = false }
         do {
             try await library.deleteAlbum(album)
+            Haptics.success()
         } catch {
             actionError = error.localizedDescription
         }
@@ -188,8 +198,23 @@ struct AlbumsView: View {
         defer { isWorking = false }
         do {
             try await library.mergeAlbums(suggestion)
+            Haptics.success()
         } catch {
             actionError = error.localizedDescription
+        }
+    }
+}
+
+private enum AlbumsSheet: Identifiable {
+    case newAlbum
+    case mergeAlbums
+    case rename(PhotoAlbum)
+
+    var id: String {
+        switch self {
+        case .newAlbum: "new"
+        case .mergeAlbums: "merge"
+        case .rename(let album): "rename-\(album.id)"
         }
     }
 }
@@ -251,6 +276,7 @@ struct RenameAlbumSheet: View {
         errorMessage = nil
         do {
             try await library.renameAlbum(album, to: name)
+            Haptics.success()
             dismiss()
         } catch {
             errorMessage = error.localizedDescription
