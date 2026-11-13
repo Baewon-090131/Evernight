@@ -11,7 +11,27 @@ fi
 
 xcodegen generate
 
-xcodebuild \
+BUILD_LOG="build/build.log"
+mkdir -p build
+: > "$BUILD_LOG"
+
+run_xcodebuild() {
+  set +e
+  xcodebuild "$@" 2>&1 | tee -a "$BUILD_LOG"
+  local status=${PIPESTATUS[0]}
+  set -e
+
+  if [[ $status -ne 0 ]]; then
+    grep -E "(: error:|fatal error:|BUILD FAILED|The following build commands failed)" "$BUILD_LOG" \
+      | head -n 12 \
+      | while IFS= read -r line; do
+          echo "::error::$line"
+        done
+    exit "$status"
+  fi
+}
+
+run_xcodebuild \
   build-for-testing \
   -project Evernight.xcodeproj \
   -scheme Evernight \
@@ -27,7 +47,7 @@ rm -rf "$ARCHIVE_PATH"
 
 IPA_NAME="Evernight-v0.1-Fall-Asleep-Beta-unsigned.ipa"
 
-xcodebuild \
+run_xcodebuild \
   archive \
   -project Evernight.xcodeproj \
   -scheme Evernight \

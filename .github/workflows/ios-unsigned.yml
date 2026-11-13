@@ -38,3 +38,11 @@ jobs:
           name: Evernight-v0.1-Fall-Asleep-Beta-unsigned
           path: artifacts/*.ipa
           if-no-files-found: error
+
+      - name: Upload build log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Evernight-build-log
+          path: build/build.log
+          if-no-files-found: ignore
