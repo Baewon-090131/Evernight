@@ -35,7 +35,8 @@ nonisolated enum PhotoLibraryReader {
                     pixelWidth: asset.pixelWidth,
                     pixelHeight: asset.pixelHeight,
                     duration: asset.duration,
-                    estimatedBytes: estimatedBytes
+                    estimatedBytes: estimatedBytes,
+                    isLivePhoto: asset.mediaSubtypes.contains(.photoLive)
                 )
             )
         }

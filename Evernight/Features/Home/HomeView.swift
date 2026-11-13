@@ -3,6 +3,7 @@ import SwiftUI
 
 struct HomeView: View {
     @Environment(PhotoLibraryStore.self) private var library
+    @State private var presentedSheet: HomeSheet?
 
     var body: some View {
         ZStack {
@@ -38,6 +39,18 @@ struct HomeView: View {
             if library.isAuthorized && !library.hasLoaded {
                 await library.reload()
             }
+        }
+        .sheet(item: $presentedSheet) { sheet in
+            NavigationStack {
+                switch sheet {
+                case .pendingDelete:
+                    PendingDeleteView()
+                case .albumPicker:
+                    AlbumPickerView(showsCloseButton: true)
+                }
+            }
+            .presentationDetents([.fraction(0.8), .large])
+            .presentationDragIndicator(.visible)
         }
     }
 
@@ -145,8 +158,8 @@ struct HomeView: View {
                 systemImage: "checkmark.circle"
             )
 
-            NavigationLink {
-                PendingDeleteView()
+            Button {
+                presentedSheet = .pendingDelete
             } label: {
                 statCard(
                     value: "\(library.pendingDeleteIDs.count)",
@@ -199,8 +212,8 @@ struct HomeView: View {
     }
 
     private var targetAlbumCard: some View {
-        NavigationLink {
-            AlbumPickerView()
+        Button {
+            presentedSheet = .albumPicker
         } label: {
             HStack(spacing: 13) {
                 Image(systemName: "folder.fill")
@@ -256,6 +269,13 @@ struct HomeView: View {
         .padding(.vertical, 30)
         .background(AppTheme.surface, in: RoundedRectangle(cornerRadius: 24))
     }
+}
+
+private enum HomeSheet: String, Identifiable {
+    case pendingDelete
+    case albumPicker
+
+    var id: String { rawValue }
 }
 
 #Preview("Home") {

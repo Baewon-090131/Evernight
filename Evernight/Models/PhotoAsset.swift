@@ -87,11 +87,38 @@ nonisolated struct PhotoAsset: Identifiable, Hashable, Sendable {
     let pixelHeight: Int
     let duration: TimeInterval
     let estimatedBytes: Int64
+    let isLivePhoto: Bool
+
+    init(
+        id: String,
+        creationDate: Date?,
+        kind: AssetKind,
+        pixelWidth: Int,
+        pixelHeight: Int,
+        duration: TimeInterval,
+        estimatedBytes: Int64,
+        isLivePhoto: Bool = false
+    ) {
+        self.id = id
+        self.creationDate = creationDate
+        self.kind = kind
+        self.pixelWidth = pixelWidth
+        self.pixelHeight = pixelHeight
+        self.duration = duration
+        self.estimatedBytes = estimatedBytes
+        self.isLivePhoto = isLivePhoto
+    }
 
     var monthKey: MonthKey? {
         creationDate.map { MonthKey.containing($0) }
     }
 
+    var mediaLabel: String {
+        if kind == .video {
+            return "视频"
+        }
+        return isLivePhoto ? "实况照片" : "照片"
+    }
 }
 
 nonisolated struct PhotoAlbum: Identifiable, Hashable, Sendable {

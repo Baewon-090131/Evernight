@@ -33,7 +33,7 @@ struct PhotoThumbnailView: View {
                 library.cancelThumbnailRequest(requestID)
             }
         }
-        .accessibilityLabel("\(asset.kind.title)，创建于 \(asset.creationDate?.formatted(date: .abbreviated, time: .shortened) ?? "未知时间")")
+        .accessibilityLabel("\(asset.mediaLabel)，创建于 \(asset.creationDate?.formatted(date: .abbreviated, time: .shortened) ?? "未知时间")")
     }
 
     private func load() {

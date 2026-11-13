@@ -11,6 +11,10 @@ struct SortingView: View {
     @State private var isAnimating = false
     @State private var presentedSheet: SortSheet?
     @State private var errorMessage: String?
+    @AppStorage(PlaybackPreferences.videoAutoplayKey) private var videoAutoplayEnabled =
+        PlaybackPreferences.videoAutoplayDefault
+    @AppStorage(PlaybackPreferences.livePhotoAutoplayKey) private var livePhotoAutoplayEnabled =
+        PlaybackPreferences.livePhotoAutoplayDefault
     @AppStorage("evernight.hasSeenGestureGuide") private var hasSeenGestureGuide = false
 
     var body: some View {
@@ -67,7 +71,7 @@ struct SortingView: View {
                 NavigationStack {
                     AlbumPickerView(showsCloseButton: true)
                 }
-                .presentationDetents([.medium, .large])
+                .presentationDetents([.fraction(0.8), .large])
                 .presentationDragIndicator(.visible)
             case .gestureGuide:
                 GestureGuideView()
@@ -188,7 +192,13 @@ struct SortingView: View {
         targetSize: CGSize
     ) -> some View {
         ZStack(alignment: .bottomLeading) {
-            PhotoThumbnailView(asset: asset, targetSize: targetSize)
+            MediaPlaybackView(
+                asset: asset,
+                targetSize: targetSize,
+                videoAutoplayEnabled: videoAutoplayEnabled,
+                livePhotoAutoplayEnabled: livePhotoAutoplayEnabled,
+                isPlaybackAllowed: isPlaybackAllowed
+            )
                 .id(asset.id)
 
             LinearGradient(
@@ -196,9 +206,10 @@ struct SortingView: View {
                 startPoint: .center,
                 endPoint: .bottom
             )
+            .allowsHitTesting(false)
 
             VStack(alignment: .leading, spacing: 5) {
-                Text(asset.kind == .video ? "视频" : "照片")
+                Text(asset.mediaLabel)
                     .font(AppFont.pingFang(11, weight: .semibold))
                     .foregroundStyle(AppTheme.brightRed)
                 Text(asset.creationDate?.formatted(date: .abbreviated, time: .shortened) ?? "未知时间")
@@ -208,10 +219,28 @@ struct SortingView: View {
                     .font(AppFont.caption)
                     .foregroundStyle(AppTheme.muted)
             }
-            .padding(20)
+            .padding(.horizontal, 20)
+            .padding(.top, 20)
+            .padding(.bottom, asset.kind == .video ? 50 : 20)
+            .allowsHitTesting(false)
         }
         .frame(width: width, height: height)
         .clipShape(RoundedRectangle(cornerRadius: 30, style: .continuous))
+        .overlay(alignment: .topTrailing) {
+            if let playbackBadge = playbackBadge(for: asset) {
+                Text(playbackBadge)
+                    .font(AppFont.pingFang(10, weight: .semibold))
+                    .foregroundStyle(AppTheme.ink)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 7)
+                    .background(.ultraThinMaterial, in: Capsule())
+                    .overlay {
+                        Capsule().stroke(AppTheme.hairline, lineWidth: 1)
+                    }
+                    .padding(14)
+                    .allowsHitTesting(false)
+            }
+        }
         .overlay {
             RoundedRectangle(cornerRadius: 30, style: .continuous)
                 .stroke(dragAccent, lineWidth: dragBadge == nil ? 1 : 2)
@@ -234,7 +263,7 @@ struct SortingView: View {
             radius: 30,
             y: 22
         )
-        .gesture(dragGesture)
+        .highPriorityGesture(dragGesture)
         .allowsHitTesting(!isAnimating)
         .accessibilityHint("向左下一项，向右撤回，向上加入待删除，向下放入目标相簿")
         .accessibilityAction(named: "下一张") {
@@ -282,6 +311,18 @@ struct SortingView: View {
                 guard !isAnimating else { return }
                 resolve(value)
             }
+    }
+
+    private var isPlaybackAllowed: Bool {
+        presentedSheet == nil && dragOffset == .zero && !isAnimating
+    }
+
+    private func playbackBadge(for asset: PhotoAsset) -> String? {
+        if asset.kind == .video {
+            return videoAutoplayEnabled ? "自动播放 · 开" : "自动播放 · 关"
+        }
+        guard asset.isLivePhoto else { return nil }
+        return livePhotoAutoplayEnabled ? "实况 · 自动播放开" : "实况 · 按住播放"
     }
 
     private var dragBadge: String? {

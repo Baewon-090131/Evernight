@@ -1,6 +1,8 @@
 import Foundation
 import Observation
+@preconcurrency import AVFoundation
 @preconcurrency import Photos
+@preconcurrency import PhotosUI
 import UIKit
 
 nonisolated enum PhotoLibraryError: LocalizedError, Sendable {
@@ -559,6 +561,72 @@ final class PhotoLibraryStore {
     }
 
     func cancelThumbnailRequest(_ requestID: PHImageRequestID) {
+        imageManager.cancelImageRequest(requestID)
+    }
+
+    func requestVideoPlayerItem(
+        for assetID: String,
+        completion: @escaping @MainActor (AVPlayerItem?) -> Void
+    ) -> PHImageRequestID? {
+        guard
+            let asset = PHAsset.fetchAssets(
+                withLocalIdentifiers: [assetID],
+                options: nil
+            ).firstObject
+        else {
+            completion(nil)
+            return nil
+        }
+
+        let options = PHVideoRequestOptions()
+        options.deliveryMode = .highQualityFormat
+        options.isNetworkAccessAllowed = true
+
+        return imageManager.requestPlayerItem(
+            forVideo: asset,
+            options: options
+        ) { item, _ in
+            Task { @MainActor in
+                completion(item)
+            }
+        }
+    }
+
+    func requestLivePhoto(
+        for assetID: String,
+        targetSize: CGSize,
+        completion: @escaping @MainActor (PHLivePhoto?) -> Void
+    ) -> PHImageRequestID? {
+        guard
+            let asset = PHAsset.fetchAssets(
+                withLocalIdentifiers: [assetID],
+                options: nil
+            ).firstObject
+        else {
+            completion(nil)
+            return nil
+        }
+
+        let options = PHLivePhotoRequestOptions()
+        options.deliveryMode = .highQualityFormat
+        options.isNetworkAccessAllowed = true
+
+        return imageManager.requestLivePhoto(
+            for: asset,
+            targetSize: targetSize,
+            contentMode: .aspectFill,
+            options: options
+        ) { photo, info in
+            if (info?[PHImageResultIsDegradedKey] as? NSNumber)?.boolValue == true {
+                return
+            }
+            Task { @MainActor in
+                completion(photo)
+            }
+        }
+    }
+
+    func cancelMediaRequest(_ requestID: PHImageRequestID) {
         imageManager.cancelImageRequest(requestID)
     }
 

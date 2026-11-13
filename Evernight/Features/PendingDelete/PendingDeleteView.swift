@@ -2,6 +2,7 @@ import Foundation
 import SwiftUI
 
 struct PendingDeleteView: View {
+    @Environment(\.dismiss) private var dismiss
     @Environment(PhotoLibraryStore.self) private var library
 
     @State private var progress: CGFloat = 0
@@ -55,6 +56,11 @@ struct PendingDeleteView: View {
         .navigationTitle("待删除")
         .navigationBarTitleDisplayMode(.inline)
         .toolbarBackground(.hidden, for: .navigationBar)
+        .toolbar {
+            ToolbarItem(placement: .cancellationAction) {
+                Button("关闭") { dismiss() }
+            }
+        }
         .onChange(of: library.pendingAssets.count) { _, _ in
             if receipt == nil {
                 progress = 0

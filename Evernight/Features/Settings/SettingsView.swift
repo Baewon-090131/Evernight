@@ -9,6 +9,10 @@ struct SettingsView: View {
     @State private var showsResetConfirmation = false
     @State private var showsProgressResetConfirmation = false
     @State private var showsGestureGuide = false
+    @AppStorage(PlaybackPreferences.videoAutoplayKey) private var videoAutoplayEnabled =
+        PlaybackPreferences.videoAutoplayDefault
+    @AppStorage(PlaybackPreferences.livePhotoAutoplayKey) private var livePhotoAutoplayEnabled =
+        PlaybackPreferences.livePhotoAutoplayDefault
 
     var body: some View {
         ZStack {
@@ -40,6 +44,15 @@ struct SettingsView: View {
                     Button("重置全部月份进度", role: .destructive) {
                         showsProgressResetConfirmation = true
                     }
+                }
+
+                Section {
+                    Toggle("视频自动播放", isOn: $videoAutoplayEnabled)
+                    Toggle("实况照片自动播放", isOn: $livePhotoAutoplayEnabled)
+                } header: {
+                    Text("播放")
+                } footer: {
+                    Text("两个开关互不影响。关闭后仍可手动播放；滑走卡片或应用进入后台时会自动暂停。")
                 }
 
                 Section("累计整理") {

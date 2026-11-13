@@ -38,6 +38,31 @@ struct SortingDeckTests {
         #expect(scope.includes(kind) == expected)
     }
 
+    @Test
+    func livePhotoRemainsInPhotoScopeAndCarriesItsOwnLabel() {
+        let livePhoto = PhotoAsset(
+            id: "live",
+            creationDate: Date(timeIntervalSince1970: 1_700_000_000),
+            kind: .photo,
+            pixelWidth: 3024,
+            pixelHeight: 4032,
+            duration: 2.1,
+            estimatedBytes: 2_000_000,
+            isLivePhoto: true
+        )
+
+        #expect(MediaScope.photos.includes(livePhoto.kind))
+        #expect(livePhoto.mediaLabel == "实况照片")
+    }
+
+    @Test
+    func regularPhotoDefaultsToStillImage() {
+        let photo = asset("still")
+
+        #expect(!photo.isLivePhoto)
+        #expect(photo.mediaLabel == "照片")
+    }
+
     private func asset(_ id: String) -> PhotoAsset {
         PhotoAsset(
             id: id,
