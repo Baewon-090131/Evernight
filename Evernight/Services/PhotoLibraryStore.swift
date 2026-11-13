@@ -36,12 +36,29 @@ final class PhotoLibraryStore {
     private(set) var pendingDeleteIDs: Set<String> = []
     private(set) var isLoading = false
     private(set) var hasLoaded = false
+    private(set) var statistics = SortStatistics()
+    private(set) var processedAssetIDs: Set<String> = []
+    private(set) var similarGroups: [SimilarGroup] = []
+    private(set) var isScanningSimilar = false
+    private(set) var similarScanMonth: MonthKey?
 
     var mediaScope: MediaScope = .all
     var targetAlbumID: String?
 
     private let imageCache = NSCache<NSString, UIImage>()
     private let imageManager = PHCachingImageManager()
+    private let statisticsKey = "evernight.sortStatistics"
+    private let processedKey = "evernight.processedAssetIDs"
+
+    init() {
+        if
+            let data = UserDefaults.standard.data(forKey: statisticsKey),
+            let saved = try? JSONDecoder().decode(SortStatistics.self, from: data)
+        {
+            statistics = saved
+        }
+        processedAssetIDs = Set(UserDefaults.standard.stringArray(forKey: processedKey) ?? [])
+    }
 
     var isAuthorized: Bool {
         authorizationStatus == .authorized || authorizationStatus == .limited
@@ -61,9 +78,13 @@ final class PhotoLibraryStore {
     }
 
     var months: [PhotoMonth] {
+        months(for: .all)
+    }
+
+    func months(for scope: MediaScope) -> [PhotoMonth] {
         var grouped: [MonthKey: [PhotoAsset]] = [:]
         for asset in assets {
-            guard let month = asset.monthKey else { continue }
+            guard let month = asset.monthKey, scope.includes(asset.kind) else { continue }
             grouped[month, default: []].append(asset)
         }
 
@@ -83,6 +104,29 @@ final class PhotoLibraryStore {
 
     var undatedAssetCount: Int {
         assets.count { $0.creationDate == nil }
+    }
+
+    var albumMergeSuggestions: [AlbumMergeSuggestion] {
+        let buckets = Dictionary(grouping: albums) {
+            normalizedAlbumTitle($0.title)
+        }
+
+        return buckets.values.compactMap { candidates in
+            guard candidates.count > 1 else { return nil }
+            let sorted = candidates.sorted {
+                $0.assetCount == $1.assetCount
+                    ? $0.title < $1.title
+                    : $0.assetCount > $1.assetCount
+            }
+            guard let target = sorted.first else { return nil }
+            let sources = Array(sorted.dropFirst())
+            return AlbumMergeSuggestion(
+                id: sorted.map(\.id).sorted().joined(separator: "|"),
+                target: target,
+                sources: sources
+            )
+        }
+        .sorted { $0.target.title < $1.target.title }
     }
 
     func bootstrapIfNeeded() async {
@@ -115,7 +159,11 @@ final class PhotoLibraryStore {
 
         assets = loadedAssets
         albums = loadedAlbums
+        similarGroups = []
+        similarScanMonth = nil
         pendingDeleteIDs.formIntersection(Set(loadedAssets.map(\.id)))
+        processedAssetIDs.formIntersection(Set(loadedAssets.map(\.id)))
+        persistProcessedAssets()
         if let targetAlbumID, !loadedAlbums.contains(where: { $0.id == targetAlbumID }) {
             self.targetAlbumID = nil
         }
@@ -126,6 +174,7 @@ final class PhotoLibraryStore {
         assets.filter { asset in
             asset.monthKey == month
                 && scope.includes(asset.kind)
+                && !processedAssetIDs.contains(asset.id)
                 && !pendingDeleteIDs.contains(asset.id)
         }
     }
@@ -138,8 +187,71 @@ final class PhotoLibraryStore {
         pendingDeleteIDs.insert(asset.id)
     }
 
+    func queueForDeletion(_ assets: [PhotoAsset]) {
+        for asset in assets {
+            pendingDeleteIDs.insert(asset.id)
+        }
+    }
+
     func removeFromDeleteQueue(_ assetID: String) {
         pendingDeleteIDs.remove(assetID)
+    }
+
+    func processedCount(in month: MonthKey) -> Int {
+        processedCount(in: month, scope: .all)
+    }
+
+    func processedCount(in month: MonthKey, scope: MediaScope) -> Int {
+        assets.count {
+            $0.monthKey == month
+                && scope.includes($0.kind)
+                && processedAssetIDs.contains($0.id)
+        }
+    }
+
+    func recordSort(_ action: SortingAction, assetID: String) {
+        processedAssetIDs.insert(assetID)
+        statistics.sortedItemCount += 1
+        switch action {
+        case .skip:
+            break
+        case .queueDeletion:
+            statistics.queuedDeleteCount += 1
+        case .moveToAlbum:
+            statistics.movedToAlbumCount += 1
+        }
+        persistProcessedAssets()
+        persistStatistics()
+    }
+
+    func revertSort(_ action: SortingAction, assetID: String) {
+        processedAssetIDs.remove(assetID)
+        statistics.sortedItemCount = max(0, statistics.sortedItemCount - 1)
+        switch action {
+        case .skip:
+            break
+        case .queueDeletion:
+            statistics.queuedDeleteCount = max(0, statistics.queuedDeleteCount - 1)
+        case .moveToAlbum:
+            statistics.movedToAlbumCount = max(0, statistics.movedToAlbumCount - 1)
+        }
+        persistProcessedAssets()
+        persistStatistics()
+    }
+
+    func resetProgress(for month: MonthKey) {
+        let ids = Set(
+            assets
+                .filter { $0.monthKey == month }
+                .map(\.id)
+        )
+        processedAssetIDs.subtract(ids)
+        persistProcessedAssets()
+    }
+
+    func resetAllProgress() {
+        processedAssetIDs.removeAll()
+        persistProcessedAssets()
     }
 
     func add(_ asset: PhotoAsset, to albumID: String) async throws {
@@ -199,6 +311,112 @@ final class PhotoLibraryStore {
         return album
     }
 
+    func renameAlbum(_ album: PhotoAlbum, to rawName: String) async throws {
+        let title = rawName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !title.isEmpty else {
+            throw PhotoLibraryError.changeFailed
+        }
+        guard
+            let collection = PHAssetCollection.fetchAssetCollections(
+                withLocalIdentifiers: [album.id],
+                options: nil
+            ).firstObject
+        else {
+            throw PhotoLibraryError.missingAlbum
+        }
+
+        try await performChanges {
+            PHAssetCollectionChangeRequest(for: collection)?.title = title
+        }
+        albums = await PhotoLibraryReader.fetchAlbums()
+    }
+
+    func deleteAlbum(_ album: PhotoAlbum) async throws {
+        let fetchResult = PHAssetCollection.fetchAssetCollections(
+            withLocalIdentifiers: [album.id],
+            options: nil
+        )
+        guard fetchResult.count > 0 else {
+            throw PhotoLibraryError.missingAlbum
+        }
+
+        try await performChanges {
+            PHAssetCollectionChangeRequest.deleteAssetCollections(fetchResult)
+        }
+        albums = await PhotoLibraryReader.fetchAlbums()
+        if targetAlbumID == album.id {
+            targetAlbumID = nil
+        }
+    }
+
+    func mergeAlbums(_ suggestion: AlbumMergeSuggestion) async throws {
+        guard
+            let target = PHAssetCollection.fetchAssetCollections(
+                withLocalIdentifiers: [suggestion.target.id],
+                options: nil
+            ).firstObject
+        else {
+            throw PhotoLibraryError.missingAlbum
+        }
+
+        let sourceCollections = suggestion.sources.map { source in
+            PHAssetCollection.fetchAssetCollections(
+                withLocalIdentifiers: [source.id],
+                options: nil
+            ).firstObject
+        }
+        .compactMap { $0 }
+
+        try await performChanges {
+            guard let targetRequest = PHAssetCollectionChangeRequest(for: target) else {
+                return
+            }
+            for source in sourceCollections {
+                let sourceAssets = PHAsset.fetchAssets(in: source, options: nil)
+                if sourceAssets.count > 0 {
+                    targetRequest.addAssets(sourceAssets)
+                }
+            }
+        }
+
+        let sourceFetchResult = PHAssetCollection.fetchAssetCollections(
+            withLocalIdentifiers: suggestion.sources.map(\.id),
+            options: nil
+        )
+        try await performChanges {
+            PHAssetCollectionChangeRequest.deleteAssetCollections(sourceFetchResult)
+        }
+        albums = await PhotoLibraryReader.fetchAlbums()
+        targetAlbumID = suggestion.target.id
+    }
+
+    func scanSimilar(in month: MonthKey) async {
+        guard !isScanningSimilar else { return }
+
+        isScanningSimilar = true
+        similarScanMonth = month
+        similarGroups = []
+        defer { isScanningSimilar = false }
+
+        let source = assets.filter {
+            $0.monthKey == month
+                && $0.kind == .photo
+                && !pendingDeleteIDs.contains($0.id)
+        }
+        let result = await SimilarityScanner.scan(source)
+        guard similarScanMonth == month, !Task.isCancelled else { return }
+        similarGroups = result
+    }
+
+    func clearSimilarResults() {
+        similarGroups = []
+        similarScanMonth = nil
+    }
+
+    func removeSimilarGroup(_ id: String) {
+        similarGroups.removeAll { $0.id == id }
+    }
+
     @discardableResult
     func deletePendingAssets() async throws -> DeleteReceipt {
         guard !pendingDeleteIDs.isEmpty else {
@@ -222,6 +440,13 @@ final class PhotoLibraryStore {
 
         pendingDeleteIDs.subtract(ids)
         assets.removeAll { ids.contains($0.id) }
+        processedAssetIDs.subtract(ids)
+        persistProcessedAssets()
+        similarGroups = []
+        similarScanMonth = nil
+        statistics.deletedItemCount += receipt.count
+        statistics.estimatedFreedBytes += receipt.estimatedBytes
+        persistStatistics()
         return receipt
     }
 
@@ -282,5 +507,29 @@ final class PhotoLibraryStore {
                 }
             }
         }
+    }
+
+    func resetStatistics() {
+        statistics = SortStatistics()
+        persistStatistics()
+    }
+
+    private func persistStatistics() {
+        guard let data = try? JSONEncoder().encode(statistics) else { return }
+        UserDefaults.standard.set(data, forKey: statisticsKey)
+    }
+
+    private func persistProcessedAssets() {
+        UserDefaults.standard.set(Array(processedAssetIDs), forKey: processedKey)
+    }
+
+    private func normalizedAlbumTitle(_ title: String) -> String {
+        title
+            .lowercased()
+            .replacingOccurrences(of: "\\s+", with: "", options: .regularExpression)
+            .replacingOccurrences(of: "副本", with: "")
+            .replacingOccurrences(of: "复制", with: "")
+            .replacingOccurrences(of: "[（(][0-9]+[）)]$", with: "", options: .regularExpression)
+            .replacingOccurrences(of: "[_-][0-9]+$", with: "", options: .regularExpression)
     }
 }

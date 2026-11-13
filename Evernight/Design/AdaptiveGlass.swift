@@ -45,7 +45,7 @@ struct PrimaryActionButton: View {
     var body: some View {
         Button(action: action) {
             Label(title, systemImage: systemImage)
-                .font(.headline)
+                .font(AppFont.headline)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 5)
         }

@@ -2,6 +2,7 @@ import SwiftUI
 
 struct MonthsView: View {
     @Environment(PhotoLibraryStore.self) private var library
+    @State private var scope: MediaScope = .all
 
     var body: some View {
         ZStack {
@@ -9,7 +10,15 @@ struct MonthsView: View {
 
             ScrollView {
                 LazyVStack(spacing: 12) {
-                    if library.months.isEmpty && !library.isLoading {
+                    Picker("媒体范围", selection: $scope) {
+                        ForEach(MediaScope.allCases) { scope in
+                            Text(scope.title).tag(scope)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                    .padding(.bottom, 4)
+
+                    if displayedMonths.isEmpty && !library.isLoading {
                         ContentUnavailableView(
                             "还没有月份",
                             systemImage: "calendar.badge.exclamationmark",
@@ -19,7 +28,7 @@ struct MonthsView: View {
                         .padding(.top, 80)
                     }
 
-                    ForEach(library.months) { month in
+                    ForEach(displayedMonths) { month in
                         NavigationLink {
                             SortingView(month: month.key)
                         } label: {
@@ -30,7 +39,7 @@ struct MonthsView: View {
 
                     if library.undatedAssetCount > 0 {
                         Text("另有 \(library.undatedAssetCount) 个媒体没有拍摄日期，v0.1 暂不纳入按月整理。")
-                            .font(.caption)
+                            .font(AppFont.caption)
                             .foregroundStyle(AppTheme.muted)
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .padding(.top, 10)
@@ -52,6 +61,10 @@ struct MonthsView: View {
         }
     }
 
+    private var displayedMonths: [PhotoMonth] {
+        library.months(for: scope)
+    }
+
     private func monthRow(_ month: PhotoMonth) -> some View {
         HStack(spacing: 15) {
             Group {
@@ -69,11 +82,23 @@ struct MonthsView: View {
 
             VStack(alignment: .leading, spacing: 5) {
                 Text(month.key.title)
-                    .font(.headline)
+                    .font(AppFont.headline)
                     .foregroundStyle(AppTheme.ink)
 
                 Text("\(month.photoCount) 张照片 · \(month.videoCount) 个视频")
-                    .font(.caption)
+                    .font(AppFont.caption)
+                    .foregroundStyle(AppTheme.muted)
+
+                let processed = library.processedCount(in: month.key)
+                ProgressView(
+                    value: Double(processed),
+                    total: Double(max(month.totalCount, 1))
+                )
+                .tint(AppTheme.brightRed)
+                .frame(maxWidth: 150)
+
+                Text("已处理 \(processed) / \(month.totalCount)")
+                    .font(AppFont.caption2)
                     .foregroundStyle(AppTheme.muted)
             }
 
@@ -81,11 +106,11 @@ struct MonthsView: View {
 
             VStack(alignment: .trailing, spacing: 3) {
                 Text("\(month.totalCount)")
-                    .font(.title3.weight(.semibold))
+                    .font(AppFont.title3)
                     .foregroundStyle(AppTheme.ink)
                     .monospacedDigit()
                 Image(systemName: "chevron.right")
-                    .font(.caption2.weight(.bold))
+                    .font(AppFont.pingFang(11, weight: .bold))
                     .foregroundStyle(AppTheme.muted)
             }
         }

@@ -3,6 +3,7 @@ import SwiftUI
 enum AppTab: Hashable {
     case tonight
     case months
+    case smart
     case albums
     case settings
 }
@@ -27,6 +28,14 @@ struct MainTabView: View {
                 Label("逐月", systemImage: "calendar")
             }
             .tag(AppTab.months)
+
+            NavigationStack {
+                SmartSortView()
+            }
+            .tabItem {
+                Label("智能", systemImage: "sparkles")
+            }
+            .tag(AppTab.smart)
 
             NavigationStack {
                 AlbumsView()

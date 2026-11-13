@@ -16,6 +16,26 @@ enum AppRelease {
     static let displayVersion = "v0.1-Fall Asleep Beta"
 }
 
+enum AppFont {
+    static func pingFang(
+        _ size: CGFloat,
+        weight: Font.Weight = .regular,
+        relativeTo style: Font.TextStyle = .body
+    ) -> Font {
+        .custom("PingFang SC", size: size, relativeTo: style).weight(weight)
+    }
+
+    static let body = pingFang(17)
+    static let title = pingFang(28, weight: .semibold)
+    static let title2 = pingFang(22, weight: .semibold)
+    static let title3 = pingFang(20, weight: .semibold)
+    static let headline = pingFang(17, weight: .semibold)
+    static let subheadline = pingFang(15)
+    static let footnote = pingFang(13)
+    static let caption = pingFang(12)
+    static let caption2 = pingFang(11)
+}
+
 struct EvernightBackground: View {
     var body: some View {
         ZStack {

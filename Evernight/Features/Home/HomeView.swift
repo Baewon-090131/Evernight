@@ -44,11 +44,11 @@ struct HomeView: View {
     private var greeting: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(Date.now.formatted(.dateTime.month(.wide).day().weekday(.wide)))
-                .font(.caption.weight(.semibold))
+                .font(AppFont.pingFang(12, weight: .semibold))
                 .foregroundStyle(AppTheme.muted)
 
             Text("今晚，从 \(library.latestMonth?.key.shortTitle ?? "最近") 开始")
-                .font(.system(size: 34, weight: .semibold))
+                .font(AppFont.pingFang(34, weight: .semibold))
                 .tracking(-1.1)
                 .foregroundStyle(AppTheme.ink)
                 .fixedSize(horizontal: false, vertical: true)
@@ -60,17 +60,17 @@ struct HomeView: View {
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 5) {
                     Text("当前整理")
-                        .font(.caption)
+                        .font(AppFont.caption)
                         .foregroundStyle(AppTheme.muted)
                     Text(month.key.title)
-                        .font(.title2.weight(.semibold))
+                        .font(AppFont.title2)
                         .foregroundStyle(AppTheme.ink)
                 }
 
                 Spacer()
 
                 Text(String(format: "%02d", month.key.month))
-                    .font(.system(size: 50, weight: .ultraLight))
+                    .font(AppFont.pingFang(50, weight: .ultraLight))
                     .tracking(-2)
                     .foregroundStyle(AppTheme.ink)
             }
@@ -81,11 +81,28 @@ struct HomeView: View {
                 monthMetric("\(month.totalCount)", "总计")
             }
 
+            let processed = library.processedCount(in: month.key)
+            VStack(spacing: 6) {
+                ProgressView(
+                    value: Double(processed),
+                    total: Double(max(month.totalCount, 1))
+                )
+                .tint(AppTheme.brightRed)
+
+                HStack {
+                    Text("已处理 \(processed) / \(month.totalCount)")
+                    Spacer()
+                    Text("还剩 \(max(month.totalCount - processed, 0))")
+                }
+                .font(AppFont.caption2)
+                .foregroundStyle(AppTheme.muted)
+            }
+
             NavigationLink {
                 SortingView(month: month.key)
             } label: {
                 Label("开始滑动整理", systemImage: "arrow.left")
-                    .font(.headline)
+                    .font(AppFont.headline)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 7)
             }
@@ -103,10 +120,10 @@ struct HomeView: View {
     private func monthMetric(_ value: String, _ label: String) -> some View {
         VStack(alignment: .leading, spacing: 3) {
             Text(value)
-                .font(.title3.weight(.semibold))
+                .font(AppFont.title3)
                 .foregroundStyle(AppTheme.ink)
             Text(label)
-                .font(.caption2)
+                .font(AppFont.caption2)
                 .foregroundStyle(AppTheme.muted)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -115,7 +132,19 @@ struct HomeView: View {
     }
 
     private var quickStats: some View {
-        HStack(spacing: 10) {
+        LazyVGrid(
+            columns: [
+                GridItem(.flexible(), spacing: 10),
+                GridItem(.flexible(), spacing: 10)
+            ],
+            spacing: 10
+        ) {
+            statCard(
+                value: "\(library.statistics.sortedItemCount)",
+                label: "已整理",
+                systemImage: "checkmark.circle"
+            )
+
             NavigationLink {
                 PendingDeleteView()
             } label: {
@@ -128,28 +157,33 @@ struct HomeView: View {
             .buttonStyle(.plain)
 
             statCard(
-                value: "\(library.albums.count)",
-                label: "可选相簿",
-                systemImage: "rectangle.stack"
+                value: "\(library.statistics.movedToAlbumCount)",
+                label: "已归档",
+                systemImage: "folder"
             )
-            .allowsHitTesting(false)
+
+            statCard(
+                value: "\(library.statistics.deletedItemCount)",
+                label: "已删除",
+                systemImage: "delete.left"
+            )
         }
     }
 
     private func statCard(value: String, label: String, systemImage: String) -> some View {
         HStack(spacing: 12) {
             Image(systemName: systemImage)
-                .font(.body.weight(.medium))
+                .font(AppFont.pingFang(17, weight: .medium))
                 .foregroundStyle(AppTheme.brightRed)
                 .frame(width: 38, height: 38)
                 .background(AppTheme.red.opacity(0.14), in: Circle())
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(value)
-                    .font(.title3.weight(.semibold))
+                    .font(AppFont.title3)
                     .foregroundStyle(AppTheme.ink)
                 Text(label)
-                    .font(.caption)
+                    .font(AppFont.caption)
                     .foregroundStyle(AppTheme.muted)
             }
 
@@ -176,17 +210,17 @@ struct HomeView: View {
 
                 VStack(alignment: .leading, spacing: 3) {
                     Text("下滑归档相簿")
-                        .font(.subheadline.weight(.semibold))
+                        .font(AppFont.pingFang(15, weight: .semibold))
                         .foregroundStyle(AppTheme.ink)
                     Text(library.targetAlbum?.title ?? "尚未选择")
-                        .font(.caption)
+                        .font(AppFont.caption)
                         .foregroundStyle(AppTheme.muted)
                 }
 
                 Spacer()
 
                 Image(systemName: "chevron.right")
-                    .font(.caption.weight(.semibold))
+                    .font(AppFont.pingFang(12, weight: .semibold))
                     .foregroundStyle(AppTheme.muted)
             }
             .padding(15)

@@ -20,13 +20,13 @@ struct OnboardingView: View {
                 Spacer(minLength: 28)
 
                 Text("让回忆\n各归其位")
-                    .font(.system(size: 44, weight: .semibold))
+                    .font(AppFont.pingFang(44, weight: .semibold))
                     .tracking(-1.4)
                     .foregroundStyle(AppTheme.ink)
                     .fixedSize(horizontal: false, vertical: true)
 
                 Text("按月滑动整理照片和视频。相似内容识别、相簿合并等功能将在后续版本加入。")
-                    .font(.body)
+                    .font(AppFont.body)
                     .foregroundStyle(AppTheme.muted)
                     .lineSpacing(4)
                     .padding(.top, 14)
@@ -46,7 +46,7 @@ struct OnboardingView: View {
                 }
 
                 Label("仅在本机分析，删除前由系统再次确认", systemImage: "lock.shield")
-                    .font(.footnote)
+                    .font(AppFont.footnote)
                     .foregroundStyle(AppTheme.muted)
                     .frame(maxWidth: .infinity)
                     .padding(.top, 16)
@@ -65,7 +65,7 @@ struct OnboardingView: View {
                 .frame(width: 30, height: 30)
 
             Text("EVERNIGHT")
-                .font(.caption.weight(.bold))
+                .font(AppFont.pingFang(12, weight: .bold))
                 .tracking(1.5)
                 .foregroundStyle(AppTheme.brightRed)
         }
@@ -82,7 +82,7 @@ struct OnboardingView: View {
                 .frame(width: 214, height: 286)
                 .overlay(alignment: .bottomLeading) {
                     Text("MEMORY / 01")
-                        .font(.caption2.monospaced())
+                        .font(AppFont.caption2)
                         .foregroundStyle(AppTheme.muted)
                         .padding(16)
                 }
@@ -118,16 +118,16 @@ struct PermissionDeniedView: View {
 
             VStack(spacing: 20) {
                 Image(systemName: "photo.badge.exclamationmark")
-                    .font(.system(size: 44, weight: .light))
+                    .font(AppFont.pingFang(44, weight: .light))
                     .foregroundStyle(AppTheme.brightRed)
 
                 VStack(spacing: 8) {
                     Text("需要相册权限")
-                        .font(.title2.weight(.semibold))
+                        .font(AppFont.title2)
                         .foregroundStyle(AppTheme.ink)
 
                     Text("Evernight 需要读取和添加照片。你可以随时在系统设置中调整权限。")
-                        .font(.body)
+                        .font(AppFont.body)
                         .multilineTextAlignment(.center)
                         .foregroundStyle(AppTheme.muted)
                 }

@@ -22,7 +22,7 @@ struct PhotoThumbnailView: View {
                     .aspectRatio(contentMode: contentMode)
             } else {
                 Image(systemName: asset.kind.systemImage)
-                    .font(.system(size: 24, weight: .light))
+                    .font(AppFont.pingFang(24, weight: .light))
                     .foregroundStyle(AppTheme.muted)
             }
         }

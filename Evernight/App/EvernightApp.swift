@@ -10,6 +10,7 @@ struct EvernightApp: App {
                 .environment(library)
                 .preferredColorScheme(.dark)
                 .tint(AppTheme.red)
+                .environment(\.font, AppFont.body)
         }
     }
 }

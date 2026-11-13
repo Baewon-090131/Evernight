@@ -40,7 +40,7 @@ struct SortingView: View {
 
             ToolbarItem(placement: .topBarTrailing) {
                 Text(positionText)
-                    .font(.caption.monospacedDigit().weight(.semibold))
+                    .font(AppFont.pingFang(12, weight: .semibold))
                     .foregroundStyle(AppTheme.muted)
             }
         }
@@ -94,9 +94,9 @@ struct SortingView: View {
             HStack(spacing: 6) {
                 Text(library.mediaScope.title)
                 Image(systemName: "chevron.down")
-                    .font(.caption2.weight(.bold))
+                    .font(AppFont.pingFang(11, weight: .bold))
             }
-            .font(.caption.weight(.semibold))
+            .font(AppFont.pingFang(12, weight: .semibold))
             .foregroundStyle(AppTheme.ink)
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
@@ -114,17 +114,24 @@ struct SortingView: View {
         VStack(spacing: 18) {
             Spacer()
             Image(systemName: "checkmark.circle")
-                .font(.system(size: 54, weight: .thin))
+                .font(AppFont.pingFang(54, weight: .thin))
                 .foregroundStyle(AppTheme.brightRed)
-            Text(deck.assets.isEmpty ? "这个范围没有待整理媒体" : "本月已整理完")
-                .font(.title2.weight(.semibold))
+            Text(finishedTitle)
+                .font(AppFont.title2)
                 .foregroundStyle(AppTheme.ink)
-            Text(deck.assets.isEmpty ? "切换媒体类型，或前往逐月选择其他月份。" : "待删除项目会先进入复核区，不会直接删除。")
-                .font(.body)
+            Text(finishedMessage)
+                .font(AppFont.body)
                 .foregroundStyle(AppTheme.muted)
                 .multilineTextAlignment(.center)
 
-            if !deck.assets.isEmpty {
+            if library.processedCount(in: month, scope: library.mediaScope) > 0 {
+                Button("重新整理本月") {
+                    library.resetProgress(for: month)
+                    rebuildDeck()
+                }
+                .modifier(AdaptivePrimaryButtonStyle())
+                .padding(.top, 6)
+            } else if !deck.assets.isEmpty {
                 Button("重新查看") {
                     rebuildDeck()
                 }
@@ -182,13 +189,13 @@ struct SortingView: View {
 
             VStack(alignment: .leading, spacing: 5) {
                 Text(asset.kind == .video ? "视频" : "照片")
-                    .font(.caption2.weight(.semibold))
+                    .font(AppFont.pingFang(11, weight: .semibold))
                     .foregroundStyle(AppTheme.brightRed)
                 Text(asset.creationDate?.formatted(date: .abbreviated, time: .shortened) ?? "未知时间")
-                    .font(.subheadline.weight(.semibold))
+                    .font(AppFont.pingFang(15, weight: .semibold))
                     .foregroundStyle(AppTheme.ink)
                 Text(metadata(for: asset))
-                    .font(.caption)
+                    .font(AppFont.caption)
                     .foregroundStyle(AppTheme.muted)
             }
             .padding(20)
@@ -202,7 +209,7 @@ struct SortingView: View {
         .overlay(alignment: dragBadgeAlignment) {
             if let dragBadge {
                 Image(systemName: dragBadge)
-                    .font(.title2.weight(.semibold))
+                    .font(AppFont.title2)
                     .foregroundStyle(AppTheme.ink)
                     .frame(width: 54, height: 54)
                     .background(AppTheme.red, in: Circle())
@@ -221,7 +228,9 @@ struct SortingView: View {
         .allowsHitTesting(!isAnimating)
         .accessibilityHint("向左下一项，向右撤回，向上加入待删除，向下放入目标相簿")
         .accessibilityAction(named: "下一张") {
+            guard let asset = deck.current else { return }
             _ = deck.completeCurrent(.skip)
+            library.recordSort(.skip, assetID: asset.id)
             Haptics.impact(.light)
         }
         .accessibilityAction(named: "撤回") {
@@ -231,6 +240,7 @@ struct SortingView: View {
             guard let asset = deck.current else { return }
             library.queueForDeletion(asset)
             _ = deck.completeCurrent(.queueDeletion)
+            library.recordSort(.queueDeletion, assetID: asset.id)
             Haptics.impact(.medium)
         }
         .accessibilityAction(named: "放入相簿") {
@@ -242,6 +252,7 @@ struct SortingView: View {
                 do {
                     try await library.add(asset, to: albumID)
                     _ = deck.completeCurrent(.moveToAlbum(albumID))
+                    library.recordSort(.moveToAlbum(albumID), assetID: asset.id)
                     Haptics.impact(.medium)
                 } catch {
                     errorMessage = error.localizedDescription
@@ -307,8 +318,12 @@ struct SortingView: View {
 
         if abs(x) > abs(y) {
             if x < 0 {
+                let asset = deck.current
                 settle(off: CGSize(width: -720, height: y)) {
                     deck.completeCurrent(.skip)
+                    if let asset {
+                        library.recordSort(.skip, assetID: asset.id)
+                    }
                     Haptics.impact(.light)
                 }
             } else {
@@ -320,7 +335,8 @@ struct SortingView: View {
             if let asset = deck.current {
                 settle(off: CGSize(width: x, height: -900)) {
                     library.queueForDeletion(asset)
-                    deck.completeCurrent(.queueDeletion)
+                    _ = deck.completeCurrent(.queueDeletion)
+                    library.recordSort(.queueDeletion, assetID: asset.id)
                     Haptics.impact(.medium)
                 }
             }
@@ -333,7 +349,8 @@ struct SortingView: View {
             settle(off: CGSize(width: x, height: 900)) {
                 do {
                     try await library.add(asset, to: albumID)
-                    deck.completeCurrent(.moveToAlbum(albumID))
+                    _ = deck.completeCurrent(.moveToAlbum(albumID))
+                    library.recordSort(.moveToAlbum(albumID), assetID: asset.id)
                     Haptics.impact(.medium)
                 } catch {
                     errorMessage = error.localizedDescription
@@ -379,6 +396,7 @@ struct SortingView: View {
             case .moveToAlbum(let albumID):
                 try await library.remove(step.asset, from: albumID)
             }
+            library.revertSort(step.action, assetID: step.asset.id)
             Haptics.impact(.light)
         } catch {
             errorMessage = error.localizedDescription
@@ -400,6 +418,20 @@ struct SortingView: View {
             return "\(seconds / 60):\(String(format: "%02d", seconds % 60)) · \(asset.pixelWidth)×\(asset.pixelHeight)"
         }
         return "\(asset.pixelWidth)×\(asset.pixelHeight)"
+    }
+
+    private var finishedTitle: String {
+        if library.processedCount(in: month, scope: library.mediaScope) > 0 {
+            return "本月已整理完"
+        }
+        return "这个范围没有待整理媒体"
+    }
+
+    private var finishedMessage: String {
+        if library.processedCount(in: month, scope: library.mediaScope) > 0 {
+            return "待删除项目会先进入复核区，不会直接删除。"
+        }
+        return "切换媒体类型，或前往逐月选择其他月份。"
     }
 }
 

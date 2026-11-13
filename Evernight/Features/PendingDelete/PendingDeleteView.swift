@@ -76,15 +76,15 @@ struct PendingDeleteView: View {
     private func successState(_ receipt: DeleteReceipt) -> some View {
         VStack(spacing: 12) {
             Image(systemName: "checkmark.circle.fill")
-                .font(.system(size: 46, weight: .light))
+                .font(AppFont.pingFang(46, weight: .light))
                 .foregroundStyle(AppTheme.brightRed)
 
             Text("已完成删除")
-                .font(.title2.weight(.semibold))
+                .font(AppFont.title2)
                 .foregroundStyle(AppTheme.ink)
 
             Text("\(receipt.count) 项已交给系统相册处理，可在“最近删除”中恢复。")
-                .font(.body)
+                .font(AppFont.body)
                 .foregroundStyle(AppTheme.muted)
                 .multilineTextAlignment(.center)
         }
@@ -96,10 +96,10 @@ struct PendingDeleteView: View {
         HStack(alignment: .bottom) {
             VStack(alignment: .leading, spacing: 5) {
                 Text("\(library.pendingAssets.count) 项待复核")
-                    .font(.headline)
+                    .font(AppFont.headline)
                     .foregroundStyle(AppTheme.ink)
                 Text("删除前还会经过 iOS 系统确认")
-                    .font(.caption)
+                    .font(AppFont.caption)
                     .foregroundStyle(AppTheme.muted)
             }
 
@@ -109,7 +109,7 @@ struct PendingDeleteView: View {
                 fromByteCount: library.pendingEstimatedBytes,
                 countStyle: .file
             ))
-            .font(.title3.weight(.semibold))
+            .font(AppFont.title3)
             .foregroundStyle(AppTheme.ink)
         }
     }
@@ -127,7 +127,7 @@ struct PendingDeleteView: View {
                 library.removeFromDeleteQueue(asset.id)
             } label: {
                 Image(systemName: "xmark")
-                    .font(.caption.weight(.bold))
+                    .font(AppFont.pingFang(12, weight: .bold))
                     .frame(width: 28, height: 28)
                     .foregroundStyle(AppTheme.ink)
                     .background(AppTheme.red, in: Circle())
@@ -156,7 +156,7 @@ struct PendingDeleteView: View {
                     .frame(width: max(knob + x, 1))
 
                 Text(railLabel)
-                    .font(.subheadline.weight(.semibold))
+                    .font(AppFont.pingFang(15, weight: .semibold))
                     .foregroundStyle(AppTheme.ink)
                     .lineLimit(1)
                     .minimumScaleFactor(0.72)
@@ -169,7 +169,7 @@ struct PendingDeleteView: View {
                         .offset(x: x + 17)
                 } else {
                     Image(systemName: completed ? "checkmark" : "arrow.right")
-                        .font(.title3.weight(.semibold))
+                        .font(AppFont.title3)
                         .foregroundStyle(AppTheme.red)
                         .frame(width: knob, height: knob)
                         .background(AppTheme.ink, in: Circle())

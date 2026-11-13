@@ -8,17 +8,17 @@ struct AlbumRow: View {
     var body: some View {
         HStack(spacing: 13) {
             Image(systemName: "rectangle.stack.fill")
-                .font(.body.weight(.medium))
+                .font(AppFont.pingFang(17, weight: .medium))
                 .foregroundStyle(AppTheme.brightRed)
                 .frame(width: 42, height: 42)
                 .background(AppTheme.red.opacity(0.14), in: RoundedRectangle(cornerRadius: 13))
 
             VStack(alignment: .leading, spacing: 3) {
                 Text(album.title)
-                    .font(.body.weight(.semibold))
+                    .font(AppFont.pingFang(17, weight: .semibold))
                     .foregroundStyle(AppTheme.ink)
                 Text("\(album.assetCount) 项")
-                    .font(.caption)
+                    .font(AppFont.caption)
                     .foregroundStyle(AppTheme.muted)
             }
 

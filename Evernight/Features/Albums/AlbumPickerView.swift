@@ -44,7 +44,7 @@ struct AlbumPickerView: View {
                         showsNewAlbum = true
                     } label: {
                         Label("新建相簿", systemImage: "plus.circle.fill")
-                            .font(.body.weight(.semibold))
+                            .font(AppFont.pingFang(17, weight: .semibold))
                             .foregroundStyle(AppTheme.brightRed)
                             .frame(maxWidth: .infinity)
                             .padding(16)
