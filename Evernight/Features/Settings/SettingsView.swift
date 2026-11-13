@@ -8,6 +8,7 @@ struct SettingsView: View {
     @Environment(\.openURL) private var openURL
     @State private var showsResetConfirmation = false
     @State private var showsProgressResetConfirmation = false
+    @State private var showsGestureGuide = false
 
     var body: some View {
         ZStack {
@@ -68,6 +69,12 @@ struct SettingsView: View {
                     }
                 }
 
+                Section("帮助") {
+                    Button("手势说明") {
+                        showsGestureGuide = true
+                    }
+                }
+
                 Section("版本") {
                     LabeledContent("版本号", value: "0.1")
                     LabeledContent("发布名称", value: "Fall Asleep Beta")
@@ -102,6 +109,9 @@ struct SettingsView: View {
             Button("取消", role: .cancel) {}
         } message: {
             Text("不会删除照片，只会让所有月份重新显示在滑动整理中。")
+        }
+        .sheet(isPresented: $showsGestureGuide) {
+            GestureGuideView()
         }
     }
 

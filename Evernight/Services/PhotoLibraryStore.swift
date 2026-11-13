@@ -43,12 +43,17 @@ final class PhotoLibraryStore {
     private(set) var similarScanMonth: MonthKey?
 
     var mediaScope: MediaScope = .all
-    var targetAlbumID: String?
+    var targetAlbumID: String? {
+        didSet {
+            UserDefaults.standard.set(targetAlbumID, forKey: Self.targetAlbumKey)
+        }
+    }
 
     private let imageCache = NSCache<NSString, UIImage>()
     private let imageManager = PHCachingImageManager()
     private let statisticsKey = "evernight.sortStatistics"
     private let processedKey = "evernight.processedAssetIDs"
+    private static let targetAlbumKey = "evernight.targetAlbumID"
 
     init() {
         if
@@ -58,6 +63,7 @@ final class PhotoLibraryStore {
             statistics = saved
         }
         processedAssetIDs = Set(UserDefaults.standard.stringArray(forKey: processedKey) ?? [])
+        targetAlbumID = UserDefaults.standard.string(forKey: Self.targetAlbumKey)
     }
 
     var isAuthorized: Bool {
@@ -132,6 +138,17 @@ final class PhotoLibraryStore {
     func bootstrapIfNeeded() async {
         authorizationStatus = PHPhotoLibrary.authorizationStatus(for: .readWrite)
         guard isAuthorized, !hasLoaded else { return }
+        await reload()
+    }
+
+    func refreshAuthorizationAndReload() async {
+        authorizationStatus = PHPhotoLibrary.authorizationStatus(for: .readWrite)
+        guard isAuthorized else {
+            hasLoaded = false
+            assets = []
+            albums = []
+            return
+        }
         await reload()
     }
 

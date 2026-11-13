@@ -9,8 +9,9 @@ struct SortingView: View {
     @State private var deck = SortingDeck()
     @State private var dragOffset = CGSize.zero
     @State private var isAnimating = false
-    @State private var showsAlbumPicker = false
+    @State private var presentedSheet: SortSheet?
     @State private var errorMessage: String?
+    @AppStorage("evernight.hasSeenGestureGuide") private var hasSeenGestureGuide = false
 
     var body: some View {
         ZStack {
@@ -49,6 +50,10 @@ struct SortingView: View {
                 await library.reload()
             }
             rebuildDeck()
+            if !hasSeenGestureGuide {
+                hasSeenGestureGuide = true
+                presentedSheet = .gestureGuide
+            }
         }
         .onChange(of: library.mediaScope) { _, _ in
             rebuildDeck()
@@ -56,12 +61,17 @@ struct SortingView: View {
         .onChange(of: library.assets.count) { _, _ in
             rebuildDeck()
         }
-        .sheet(isPresented: $showsAlbumPicker) {
-            NavigationStack {
-                AlbumPickerView(showsCloseButton: true)
+        .sheet(item: $presentedSheet) { sheet in
+            switch sheet {
+            case .albumPicker:
+                NavigationStack {
+                    AlbumPickerView(showsCloseButton: true)
+                }
+                .presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
+            case .gestureGuide:
+                GestureGuideView()
             }
-            .presentationDetents([.medium, .large])
-            .presentationDragIndicator(.visible)
         }
         .alert(
             "操作未完成",
@@ -245,7 +255,7 @@ struct SortingView: View {
         }
         .accessibilityAction(named: "放入相簿") {
             guard let asset = deck.current, let albumID = library.targetAlbumID else {
-                showsAlbumPicker = true
+                presentedSheet = .albumPicker
                 return
             }
             Task {
@@ -343,7 +353,7 @@ struct SortingView: View {
         } else {
             guard let asset = deck.current, let albumID = library.targetAlbumID else {
                 returnToRest()
-                showsAlbumPicker = true
+                presentedSheet = .albumPicker
                 return
             }
             settle(off: CGSize(width: x, height: 900)) {
@@ -433,6 +443,13 @@ struct SortingView: View {
         }
         return "切换媒体类型，或前往逐月选择其他月份。"
     }
+}
+
+private enum SortSheet: String, Identifiable {
+    case albumPicker
+    case gestureGuide
+
+    var id: String { rawValue }
 }
 
 #Preview("Sorting") {
