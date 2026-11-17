@@ -13,6 +13,7 @@ struct SortingView: View {
     @State private var currentCardOpacity = 1.0
     @State private var currentCardScale: CGFloat = 1
     @State private var nextCardRevealProgress: CGFloat = 0
+    @State private var frontSlotIndex = 0
     @State private var isAnimating = false
     @State private var cardLayerVisible = false
     @State private var hasPreparedInitialDeck = false
@@ -258,15 +259,11 @@ struct SortingView: View {
         GeometryReader { proxy in
             if proxy.size.width > 1, proxy.size.height > 1 {
                 let containerSize = proxy.size
-                let currentSize = mediaCardSize(for: asset, in: containerSize)
-                let currentTargetSize = imageTargetSize(for: currentSize)
                 let ambientTargetSize = CGSize(
                     width: containerSize.width * displayScale,
                     height: containerSize.height * displayScale
                 )
                 let next = deck.next
-                let nextSize = next.map { mediaCardSize(for: $0, in: containerSize) }
-                let nextTargetSize = nextSize.map { imageTargetSize(for: $0) }
 
                 ZStack {
                     ambientCard(
@@ -275,37 +272,33 @@ struct SortingView: View {
                         opacity: 0.34 * currentCardOpacity
                     )
 
-                    if let next, let nextSize, let nextTargetSize {
+                    if let next {
                         ambientCard(
                             next,
                             targetSize: ambientTargetSize,
                             opacity: 0.34 * Double(nextCardRevealProgress)
                         )
-
-                        PhotoThumbnailView(
-                            asset: next,
-                            targetSize: nextTargetSize,
-                            contentMode: .fit
-                        )
-                        .id("sorting-back-card-slot")
-                        .frame(width: nextSize.width, height: nextSize.height)
-                        .clipShape(RoundedRectangle(cornerRadius: 30, style: .continuous))
-                        .scaleEffect(0.92 + 0.08 * nextCardRevealProgress)
-                        .offset(y: 14 * (1 - nextCardRevealProgress))
-                        .opacity(Double(nextCardRevealProgress))
-                        .allowsHitTesting(false)
                     }
 
                     Rectangle()
                         .fill(AppTheme.background.opacity(albumRailVisible ? 0.2 : 0))
                         .allowsHitTesting(false)
 
-                    swipeCard(
-                        asset,
-                        size: currentSize,
-                        targetSize: currentTargetSize,
-                        containerSize: containerSize
-                    )
+                    ForEach([0, 1], id: \.self) { slotIndex in
+                        if let slotAsset = asset(forSlot: slotIndex) {
+                            let size = mediaCardSize(for: slotAsset, in: containerSize)
+                            let targetSize = imageTargetSize(for: size)
+                            cardSlot(
+                                slotAsset,
+                                size: size,
+                                targetSize: targetSize,
+                                isFront: slotIndex == frontSlotIndex,
+                                containerSize: containerSize
+                            )
+                            .id("sorting-card-slot-\(slotIndex)")
+                            .zIndex(slotIndex == frontSlotIndex ? 3 : 1)
+                        }
+                    }
 
                     if albumRailVisible {
                         VStack {
@@ -339,11 +332,99 @@ struct SortingView: View {
         }
     }
 
-    private func swipeCard(
+    private func asset(forSlot slotIndex: Int) -> PhotoAsset? {
+        slotIndex == frontSlotIndex ? deck.current : deck.next
+    }
+
+    private func cardSlot(
         _ asset: PhotoAsset,
         size: CGSize,
         targetSize: CGSize,
+        isFront: Bool,
         containerSize: CGSize
+    ) -> some View {
+        let revealProgress = nextCardRevealProgress
+        let backScale = 0.92 + 0.08 * revealProgress
+        let backOffset = CGSize(
+            width: 0,
+            height: 14 * (1 - revealProgress)
+        )
+
+        return cardVisual(
+            asset,
+            size: size,
+            targetSize: targetSize,
+            isFront: isFront
+        )
+        .scaleEffect(isFront ? renderedCardScale : backScale)
+        .offset(isFront ? dragOffset : backOffset)
+        .opacity(isFront ? currentCardOpacity : Double(revealProgress))
+        .rotationEffect(
+            .degrees(
+                isFront && !albumRailVisible
+                    ? dragOffset.width / 26
+                    : 0
+            )
+        )
+        .shadow(
+            color: AppTheme.red.opacity(
+                isFront
+                    ? (abs(dragOffset.height) > 40 ? 0.34 : 0.18)
+                    : 0.18 * Double(revealProgress)
+            ),
+            radius: 30,
+            y: 22
+        )
+        .highPriorityGesture(
+            dragGesture(containerSize: containerSize),
+            including: isFront ? .all : .none
+        )
+        .allowsHitTesting(isFront && !isAnimating)
+        .accessibilityHidden(!isFront)
+        .accessibilityHint("向左下一项，向右撤回上一步，向上加入待删除，向下选择相簿")
+        .accessibilityAction(named: "下一张") {
+            guard isFront else { return }
+            Task { await advance(asset, action: .skip, off: CGSize(width: -720, height: 0)) }
+        }
+        .accessibilityAction(named: "撤回") {
+            guard isFront else { return }
+            Task {
+                await undo(containerSize: CGSize(width: 360, height: 650))
+            }
+        }
+        .accessibilityAction(named: "加入待删除") {
+            guard isFront else { return }
+            Task {
+                await advance(
+                    asset,
+                    action: .queueDeletion,
+                    off: CGSize(width: 0, height: -760)
+                )
+            }
+        }
+        .accessibilityAction(named: "放入相簿") {
+            guard isFront else { return }
+            guard let albumID = library.targetAlbumID else {
+                albumRailVisible = true
+                selectedAlbumIndex = initialAlbumSelectionIndex()
+                return
+            }
+            Task {
+                await animateAlbumAdd(
+                    asset,
+                    albumID: albumID,
+                    dropX: 0,
+                    containerSize: CGSize(width: 360, height: 650)
+                )
+            }
+        }
+    }
+
+    private func cardVisual(
+        _ asset: PhotoAsset,
+        size: CGSize,
+        targetSize: CGSize,
+        isFront: Bool
     ) -> some View {
         ZStack(alignment: .bottomLeading) {
             MediaPlaybackView(
@@ -351,7 +432,7 @@ struct SortingView: View {
                 targetSize: targetSize,
                 videoAutoplayEnabled: videoAutoplayEnabled,
                 livePhotoAutoplayEnabled: livePhotoAutoplayEnabled,
-                isPlaybackAllowed: isPlaybackAllowed,
+                isPlaybackAllowed: isFront && isPlaybackAllowed,
                 contentMode: .fit
             )
             .id(asset.id)
@@ -381,7 +462,6 @@ struct SortingView: View {
             .allowsHitTesting(false)
         }
         .frame(width: size.width, height: size.height)
-        .id("sorting-front-card-slot")
         .clipShape(RoundedRectangle(cornerRadius: 30, style: .continuous))
         .overlay(alignment: .topTrailing) {
             if let playbackBadge = playbackBadge(for: asset), !albumRailVisible {
@@ -400,10 +480,13 @@ struct SortingView: View {
         }
         .overlay {
             RoundedRectangle(cornerRadius: 30, style: .continuous)
-                .stroke(dragAccent, lineWidth: dragBadge == nil ? 1 : 2)
+                .stroke(
+                    isFront ? dragAccent : AppTheme.hairline,
+                    lineWidth: isFront && dragBadge != nil ? 2 : 1
+                )
         }
         .overlay(alignment: dragBadgeAlignment) {
-            if let dragBadge, !albumRailVisible {
+            if isFront, let dragBadge, !albumRailVisible {
                 Image(systemName: dragBadge)
                     .font(AppFont.title2)
                     .foregroundStyle(AppTheme.ink)
@@ -411,51 +494,6 @@ struct SortingView: View {
                     .background(AppTheme.red, in: Circle())
                     .padding(22)
                     .transition(.scale.combined(with: .opacity))
-            }
-        }
-        .scaleEffect(renderedCardScale)
-        .offset(dragOffset)
-        .rotationEffect(.degrees(albumRailVisible ? 0 : dragOffset.width / 26))
-        .shadow(
-            color: AppTheme.red.opacity(abs(dragOffset.height) > 40 ? 0.34 : 0.18),
-            radius: 30,
-            y: 22
-        )
-        .highPriorityGesture(
-            dragGesture(containerSize: containerSize)
-        )
-        .allowsHitTesting(!isAnimating)
-        .accessibilityHint("向左下一项，向右撤回上一步，向上加入待删除，向下选择相簿")
-        .accessibilityAction(named: "下一张") {
-            Task { await advance(asset, action: .skip, off: CGSize(width: -720, height: 0)) }
-        }
-        .accessibilityAction(named: "撤回") {
-            Task {
-                await undo(containerSize: CGSize(width: 360, height: 650))
-            }
-        }
-        .accessibilityAction(named: "加入待删除") {
-            Task {
-                await advance(
-                    asset,
-                    action: .queueDeletion,
-                    off: CGSize(width: 0, height: -760)
-                )
-            }
-        }
-        .accessibilityAction(named: "放入相簿") {
-            guard let albumID = library.targetAlbumID else {
-                albumRailVisible = true
-                selectedAlbumIndex = initialAlbumSelectionIndex()
-                return
-            }
-            Task {
-                await animateAlbumAdd(
-                    asset,
-                    albumID: albumID,
-                    dropX: 0,
-                    containerSize: CGSize(width: 360, height: 650)
-                )
             }
         }
     }
@@ -795,6 +833,7 @@ struct SortingView: View {
             )
             withoutAnimation {
                 _ = deck.undoLastAction()
+                frontSlotIndex = 1 - frontSlotIndex
                 dragOffset = entryOffset
                 currentCardOpacity = 0
                 currentCardScale = 0.92
@@ -859,6 +898,7 @@ struct SortingView: View {
     private func completeCurrentAtomically(_ action: SortingAction) {
         withoutAnimation {
             _ = deck.completeCurrent(action)
+            frontSlotIndex = 1 - frontSlotIndex
             resetPresentationStateValues()
         }
     }
@@ -888,6 +928,7 @@ struct SortingView: View {
             deck.replaceAssets(
                 library.sortingAssets(for: month, scope: library.mediaScope)
             )
+            frontSlotIndex = 0
             resetPresentationStateValues()
         }
     }
