@@ -248,6 +248,12 @@ final class PhotoLibraryStore {
         }
     }
 
+    func mediaCount(in month: MonthKey, scope: MediaScope) -> Int {
+        assets.count {
+            $0.monthKey == month && scope.includes($0.kind)
+        }
+    }
+
     func recordSort(_ action: SortingAction, assetID: String) {
         processedAssetIDs.insert(assetID)
         statistics.sortedItemCount += 1
@@ -535,6 +541,7 @@ final class PhotoLibraryStore {
         for assetID: String,
         targetSize: CGSize,
         contentMode: PHImageContentMode = .aspectFill,
+        preview: (@MainActor (UIImage) -> Void)? = nil,
         completion: @escaping @MainActor (UIImage?) -> Void
     ) -> PHImageRequestID? {
         let cacheKey = "\(assetID)-\(Int(targetSize.width))x\(Int(targetSize.height))-\(contentMode == .aspectFill ? "fill" : "fit")" as NSString
@@ -554,7 +561,7 @@ final class PhotoLibraryStore {
         }
 
         let options = PHImageRequestOptions()
-        options.deliveryMode = .highQualityFormat
+        options.deliveryMode = .opportunistic
         options.isNetworkAccessAllowed = true
         options.resizeMode = .exact
         options.version = .current
@@ -566,8 +573,13 @@ final class PhotoLibraryStore {
             options: options
         ) { [weak self] image, info in
             let isDegraded = (info?[PHImageResultIsDegradedKey] as? Bool) ?? false
-            guard !isDegraded else { return }
             Task { @MainActor in
+                if isDegraded {
+                    if let image {
+                        preview?(image)
+                    }
+                    return
+                }
                 if let image {
                     let cost = (image.cgImage?.width ?? 0) * (image.cgImage?.height ?? 0) * 4
                     self?.imageCache.setObject(image, forKey: cacheKey, cost: cost)

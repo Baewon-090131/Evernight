@@ -300,11 +300,12 @@ private struct AlbumCoverView: View {
         requestID = library.requestThumbnail(
             for: assetID,
             targetSize: targetSize,
-            contentMode: .aspectFill
-        ) { loadedImage in
-            image = loadedImage
-            requestID = nil
-        }
+            contentMode: .aspectFill,
+            completion: { loadedImage in
+                image = loadedImage
+                requestID = nil
+            }
+        )
     }
 
     private func cancelRequest() {

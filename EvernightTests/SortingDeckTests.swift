@@ -40,6 +40,26 @@ struct SortingDeckTests {
     }
 
     @Test
+    func cardRevealFollowsEveryForwardDirection() {
+        #expect(
+            CardRevealProgress.value(for: CGSize(width: -52.5, height: 0)) == 0.5
+        )
+        #expect(
+            abs(CardRevealProgress.value(for: CGSize(width: 0, height: -84)) - 0.8) < 0.0001
+        )
+        #expect(
+            CardRevealProgress.value(for: CGSize(width: 0, height: 105)) == 1
+        )
+    }
+
+    @Test
+    func cardRevealStaysHiddenForRightSwipeUndo() {
+        #expect(
+            CardRevealProgress.value(for: CGSize(width: 140, height: 12)) == 0
+        )
+    }
+
+    @Test
     func livePhotoRemainsInPhotoScopeAndCarriesItsOwnLabel() {
         let livePhoto = PhotoAsset(
             id: "live",

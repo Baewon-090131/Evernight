@@ -12,9 +12,12 @@ struct SortingView: View {
     @State private var dragOffset = CGSize.zero
     @State private var currentCardOpacity = 1.0
     @State private var currentCardScale: CGFloat = 1
+    @State private var nextCardRevealProgress: CGFloat = 0
     @State private var isAnimating = false
-    @State private var isAdvancing = false
-    @State private var isUndoing = false
+    @State private var cardLayerVisible = false
+    @State private var hasPreparedInitialDeck = false
+    @State private var lastPreparedAssetCount: Int?
+    @State private var needsDeckRebuild = false
     @State private var lockedDragAxis: DragAxis?
     @State private var albumRailVisible = false
     @State private var selectedAlbumIndex = 2
@@ -37,7 +40,10 @@ struct SortingView: View {
                         .tint(AppTheme.brightRed)
                         .foregroundStyle(AppTheme.muted)
                 } else if let asset = deck.current {
+                    sortingProgressHeader
                     cardStack(asset)
+                        .opacity(cardLayerVisible ? 1 : 0)
+                        .allowsHitTesting(cardLayerVisible)
                 } else {
                     finishedState
                 }
@@ -72,17 +78,33 @@ struct SortingView: View {
             if !library.hasLoaded {
                 await library.reload()
             }
-            rebuildDeck()
+            if !hasPreparedInitialDeck {
+                rebuildDeck()
+                hasPreparedInitialDeck = true
+                lastPreparedAssetCount = library.assets.count
+                await Task.yield()
+                withAnimation(.easeOut(duration: reduceMotion ? 0.01 : 0.2)) {
+                    cardLayerVisible = true
+                }
+            }
             if !hasSeenGestureGuide {
                 hasSeenGestureGuide = true
                 presentedSheet = .gestureGuide
             }
         }
         .onChange(of: library.mediaScope) { _, _ in
-            rebuildDeck()
+            scheduleDeckRebuild()
         }
-        .onChange(of: library.assets.count) { _, _ in
-            rebuildDeck()
+        .onChange(of: library.assets.count) { _, count in
+            guard
+                hasPreparedInitialDeck,
+                library.hasLoaded,
+                count != lastPreparedAssetCount
+            else {
+                return
+            }
+            lastPreparedAssetCount = count
+            scheduleDeckRebuild()
         }
         .sheet(item: $presentedSheet) { sheet in
             switch sheet {
@@ -161,6 +183,51 @@ struct SortingView: View {
         return "\(min(deck.cursor + 1, deck.assets.count)) / \(deck.assets.count)"
     }
 
+    private var monthTotalCount: Int {
+        library.mediaCount(in: month, scope: library.mediaScope)
+    }
+
+    private var monthProcessedCount: Int {
+        library.processedCount(in: month, scope: library.mediaScope)
+    }
+
+    private var sortingProgress: Double {
+        guard monthTotalCount > 0 else { return 0 }
+        return min(
+            max(Double(monthProcessedCount) / Double(monthTotalCount), 0),
+            1
+        )
+    }
+
+    private var sortingProgressHeader: some View {
+        VStack(spacing: 6) {
+            HStack {
+                Text("本月整理")
+                Spacer()
+                Text("已整理 \(monthProcessedCount) / \(monthTotalCount)")
+            }
+            .font(AppFont.pingFang(10, weight: .medium))
+            .foregroundStyle(AppTheme.muted)
+
+            GeometryReader { proxy in
+                ZStack(alignment: .leading) {
+                    Capsule()
+                        .fill(AppTheme.hairline)
+
+                    Capsule()
+                        .fill(AppTheme.brightRed)
+                        .frame(width: proxy.size.width * CGFloat(sortingProgress))
+                }
+            }
+            .frame(height: 4)
+        }
+        .padding(.horizontal, 8)
+        .animation(.easeOut(duration: 0.22), value: sortingProgress)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("本月整理进度")
+        .accessibilityValue("\(monthProcessedCount) / \(monthTotalCount)")
+    }
+
     private var albumDropTargets: [AlbumDropTarget] {
         AlbumDropTarget.orderedTargets(for: library.albums)
     }
@@ -189,83 +256,86 @@ struct SortingView: View {
 
     private func cardStack(_ asset: PhotoAsset) -> some View {
         GeometryReader { proxy in
-            let containerSize = proxy.size
-            let currentSize = mediaCardSize(for: asset, in: containerSize)
-            let currentTargetSize = imageTargetSize(for: currentSize)
-            let ambientTargetSize = CGSize(
-                width: containerSize.width * displayScale,
-                height: containerSize.height * displayScale
-            )
-            let next = deck.next
-            let nextSize = next.map { mediaCardSize(for: $0, in: containerSize) }
-            let nextTargetSize = nextSize.map { imageTargetSize(for: $0) }
-
-            ZStack {
-                ambientCard(
-                    asset,
-                    targetSize: ambientTargetSize,
-                    opacity: isAdvancing || isUndoing ? 0 : 0.34
+            if proxy.size.width > 1, proxy.size.height > 1 {
+                let containerSize = proxy.size
+                let currentSize = mediaCardSize(for: asset, in: containerSize)
+                let currentTargetSize = imageTargetSize(for: currentSize)
+                let ambientTargetSize = CGSize(
+                    width: containerSize.width * displayScale,
+                    height: containerSize.height * displayScale
                 )
+                let next = deck.next
+                let nextSize = next.map { mediaCardSize(for: $0, in: containerSize) }
+                let nextTargetSize = nextSize.map { imageTargetSize(for: $0) }
 
-                if let next, let nextSize, let nextTargetSize {
+                ZStack {
                     ambientCard(
-                        next,
+                        asset,
                         targetSize: ambientTargetSize,
-                        opacity: isAdvancing ? 0.34 : 0.1
+                        opacity: 0.34 * currentCardOpacity
                     )
 
-                    PhotoThumbnailView(
-                        asset: next,
-                        targetSize: nextTargetSize,
-                        contentMode: .fit
-                    )
-                    .id(next.id)
-                    .frame(width: nextSize.width, height: nextSize.height)
-                    .clipShape(RoundedRectangle(cornerRadius: 30, style: .continuous))
-                    .scaleEffect(isAdvancing ? 1 : 0.94)
-                    .offset(y: isAdvancing ? 0 : 14)
-                    .opacity(
-                        isUndoing
-                            ? 0
-                            : (isAdvancing ? 1 : (albumRailVisible ? 0.16 : 0.56))
-                    )
-                    .allowsHitTesting(false)
-                }
+                    if let next, let nextSize, let nextTargetSize {
+                        ambientCard(
+                            next,
+                            targetSize: ambientTargetSize,
+                            opacity: 0.34 * Double(nextCardRevealProgress)
+                        )
 
-                Rectangle()
-                    .fill(AppTheme.background.opacity(albumRailVisible ? 0.2 : 0))
-                    .allowsHitTesting(false)
-
-                swipeCard(
-                    asset,
-                    size: currentSize,
-                    targetSize: currentTargetSize,
-                    containerSize: containerSize
-                )
-
-                if albumRailVisible {
-                    VStack {
-                        Spacer()
-                        AlbumDropRail(
-                            albums: library.albums,
-                            selectedIndex: safeSelectedAlbumIndex
-                        ) { target in
-                            handleAlbumTargetTap(
-                                target,
-                                asset: asset,
-                                containerSize: containerSize
-                            )
-                        }
-                        .padding(.horizontal, 8)
-                        .padding(.bottom, 2)
-                        .allowsHitTesting(!isAnimating)
+                        PhotoThumbnailView(
+                            asset: next,
+                            targetSize: nextTargetSize,
+                            contentMode: .fit
+                        )
+                        .id(next.id)
+                        .frame(width: nextSize.width, height: nextSize.height)
+                        .clipShape(RoundedRectangle(cornerRadius: 30, style: .continuous))
+                        .scaleEffect(0.92 + 0.08 * nextCardRevealProgress)
+                        .offset(y: 14 * (1 - nextCardRevealProgress))
+                        .opacity(Double(nextCardRevealProgress))
+                        .allowsHitTesting(false)
                     }
-                    .transition(.move(edge: .bottom).combined(with: .opacity))
-                    .zIndex(8)
+
+                    Rectangle()
+                        .fill(AppTheme.background.opacity(albumRailVisible ? 0.2 : 0))
+                        .allowsHitTesting(false)
+
+                    swipeCard(
+                        asset,
+                        size: currentSize,
+                        targetSize: currentTargetSize,
+                        containerSize: containerSize
+                    )
+
+                    if albumRailVisible {
+                        VStack {
+                            Spacer()
+                            AlbumDropRail(
+                                albums: library.albums,
+                                selectedIndex: safeSelectedAlbumIndex
+                            ) { target in
+                                handleAlbumTargetTap(
+                                    target,
+                                    asset: asset,
+                                    containerSize: containerSize
+                                )
+                            }
+                            .padding(.horizontal, 8)
+                            .padding(.bottom, 2)
+                            .allowsHitTesting(!isAnimating)
+                        }
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                        .zIndex(8)
+                    }
                 }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .coordinateSpace(name: DragCoordinateSpace.name)
+            } else {
+                ProgressView("准备卡片…")
+                    .tint(AppTheme.brightRed)
+                    .foregroundStyle(AppTheme.muted)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .coordinateSpace(name: DragCoordinateSpace.name)
         }
     }
 
@@ -424,6 +494,9 @@ struct SortingView: View {
             }
 
             dragOffset = CGSize(width: x, height: y)
+            nextCardRevealProgress = CardRevealProgress.value(
+                for: CGSize(width: x, height: y)
+            )
 
             guard lockedDragAxis == .vertical else {
                 if albumRailVisible {
@@ -621,7 +694,7 @@ struct SortingView: View {
         albumRailVisible = false
 
         withAnimation(cardAnimation(duration: 0.28)) {
-            isAdvancing = true
+            nextCardRevealProgress = 1
             currentCardOpacity = 0
             currentCardScale = 1.04
             dragOffset = off
@@ -641,6 +714,7 @@ struct SortingView: View {
         } else {
             Haptics.impact(.light)
         }
+        applyDeferredDeckRebuildIfNeeded()
     }
 
     private func animateAlbumAdd(
@@ -654,7 +728,7 @@ struct SortingView: View {
         lockedDragAxis = nil
 
         withAnimation(cardAnimation(duration: 0.22)) {
-            isAdvancing = true
+            nextCardRevealProgress = 1
             let horizontalLimit = containerSize.width * 0.42
             dragOffset = CGSize(
                 width: min(max(dropX, -horizontalLimit), horizontalLimit),
@@ -677,6 +751,7 @@ struct SortingView: View {
             library.recordSort(.moveToAlbum(albumID), assetID: asset.id)
             resetPresentationState()
             Haptics.impact(.medium)
+            applyDeferredDeckRebuildIfNeeded()
         } catch {
             errorMessage = error.localizedDescription
             Haptics.error()
@@ -694,7 +769,7 @@ struct SortingView: View {
         }
 
         isAnimating = true
-        isUndoing = true
+        nextCardRevealProgress = 0
         lockedDragAxis = nil
         albumRailVisible = false
 
@@ -727,7 +802,6 @@ struct SortingView: View {
                 dragOffset = entryOffset
                 currentCardOpacity = 0
                 currentCardScale = 0.92
-                isUndoing = false
             }
 
             await Task.yield()
@@ -741,6 +815,7 @@ struct SortingView: View {
             try? await Task.sleep(for: .milliseconds(reduceMotion ? 16 : 460))
             isAnimating = false
             Haptics.impact(.light)
+            applyDeferredDeckRebuildIfNeeded()
         } catch {
             errorMessage = error.localizedDescription
             Haptics.error()
@@ -776,9 +851,8 @@ struct SortingView: View {
             dragOffset = .zero
             currentCardOpacity = 1
             currentCardScale = 1
+            nextCardRevealProgress = 0
             isAnimating = false
-            isAdvancing = false
-            isUndoing = false
             lockedDragAxis = nil
             albumRailVisible = false
         }
@@ -794,13 +868,13 @@ struct SortingView: View {
             dragOffset = .zero
             currentCardOpacity = 1
             currentCardScale = 1
-            isAdvancing = false
-            isUndoing = false
+            nextCardRevealProgress = 0
             albumRailVisible = false
         }
         Task {
             try? await Task.sleep(for: .milliseconds(reduceMotion ? 16 : 340))
             isAnimating = false
+            applyDeferredDeckRebuildIfNeeded()
         }
     }
 
@@ -809,6 +883,22 @@ struct SortingView: View {
             library.sortingAssets(for: month, scope: library.mediaScope)
         )
         resetPresentationState()
+    }
+
+    private func scheduleDeckRebuild() {
+        guard hasPreparedInitialDeck else { return }
+        if isAnimating {
+            needsDeckRebuild = true
+        } else {
+            rebuildDeck()
+        }
+    }
+
+    private func applyDeferredDeckRebuildIfNeeded() {
+        guard needsDeckRebuild, !isAnimating else { return }
+        needsDeckRebuild = false
+        lastPreparedAssetCount = library.assets.count
+        rebuildDeck()
     }
 
     private func mediaCardSize(for asset: PhotoAsset, in bounds: CGSize) -> CGSize {
