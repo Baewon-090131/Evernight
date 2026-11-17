@@ -287,7 +287,7 @@ struct SortingView: View {
                             targetSize: nextTargetSize,
                             contentMode: .fit
                         )
-                        .id(next.id)
+                        .id("sorting-back-card-slot")
                         .frame(width: nextSize.width, height: nextSize.height)
                         .clipShape(RoundedRectangle(cornerRadius: 30, style: .continuous))
                         .scaleEffect(0.92 + 0.08 * nextCardRevealProgress)
@@ -381,6 +381,7 @@ struct SortingView: View {
             .allowsHitTesting(false)
         }
         .frame(width: size.width, height: size.height)
+        .id("sorting-front-card-slot")
         .clipShape(RoundedRectangle(cornerRadius: 30, style: .continuous))
         .overlay(alignment: .topTrailing) {
             if let playbackBadge = playbackBadge(for: asset), !albumRailVisible {
@@ -677,9 +678,8 @@ struct SortingView: View {
         albumID: String
     ) {
         guard deck.current?.id == asset.id else { return }
-        _ = deck.completeCurrent(.moveToAlbum(albumID))
+        completeCurrentAtomically(.moveToAlbum(albumID))
         library.recordSort(.moveToAlbum(albumID), assetID: asset.id)
-        resetPresentationState()
         Haptics.success()
     }
 
@@ -705,9 +705,8 @@ struct SortingView: View {
         if action == .queueDeletion {
             library.queueForDeletion(asset)
         }
-        _ = deck.completeCurrent(action)
+        completeCurrentAtomically(action)
         library.recordSort(action, assetID: asset.id)
-        resetPresentationState()
 
         if action == .queueDeletion {
             Haptics.impact(.medium)
@@ -747,9 +746,8 @@ struct SortingView: View {
                 currentCardOpacity = 0
             }
             try? await Task.sleep(for: .milliseconds(reduceMotion ? 0 : 120))
-            _ = deck.completeCurrent(.moveToAlbum(albumID))
+            completeCurrentAtomically(.moveToAlbum(albumID))
             library.recordSort(.moveToAlbum(albumID), assetID: asset.id)
-            resetPresentationState()
             Haptics.impact(.medium)
             applyDeferredDeckRebuildIfNeeded()
         } catch {
@@ -791,18 +789,20 @@ struct SortingView: View {
                 try await library.remove(step.asset, from: albumID)
             }
 
-            _ = deck.undoLastAction()
-            library.revertSort(step.action, assetID: step.asset.id)
-
             let entryOffset = undoEntryOffset(
                 for: step.action,
                 containerSize: containerSize
             )
             withoutAnimation {
+                _ = deck.undoLastAction()
                 dragOffset = entryOffset
                 currentCardOpacity = 0
                 currentCardScale = 0.92
+                nextCardRevealProgress = 0
+                albumRailVisible = false
+                lockedDragAxis = nil
             }
+            library.revertSort(step.action, assetID: step.asset.id)
 
             await Task.yield()
 
@@ -846,15 +846,20 @@ struct SortingView: View {
         }
     }
 
-    private func resetPresentationState() {
+    private func resetPresentationStateValues() {
+        dragOffset = .zero
+        currentCardOpacity = 1
+        currentCardScale = 1
+        nextCardRevealProgress = 0
+        isAnimating = false
+        lockedDragAxis = nil
+        albumRailVisible = false
+    }
+
+    private func completeCurrentAtomically(_ action: SortingAction) {
         withoutAnimation {
-            dragOffset = .zero
-            currentCardOpacity = 1
-            currentCardScale = 1
-            nextCardRevealProgress = 0
-            isAnimating = false
-            lockedDragAxis = nil
-            albumRailVisible = false
+            _ = deck.completeCurrent(action)
+            resetPresentationStateValues()
         }
     }
 
@@ -879,15 +884,17 @@ struct SortingView: View {
     }
 
     private func rebuildDeck() {
-        deck.replaceAssets(
-            library.sortingAssets(for: month, scope: library.mediaScope)
-        )
-        resetPresentationState()
+        withoutAnimation {
+            deck.replaceAssets(
+                library.sortingAssets(for: month, scope: library.mediaScope)
+            )
+            resetPresentationStateValues()
+        }
     }
 
     private func scheduleDeckRebuild() {
         guard hasPreparedInitialDeck else { return }
-        if isAnimating {
+        if isAnimating || dragOffset != .zero || albumRailVisible {
             needsDeckRebuild = true
         } else {
             rebuildDeck()
@@ -895,7 +902,14 @@ struct SortingView: View {
     }
 
     private func applyDeferredDeckRebuildIfNeeded() {
-        guard needsDeckRebuild, !isAnimating else { return }
+        guard
+            needsDeckRebuild,
+            !isAnimating,
+            dragOffset == .zero,
+            !albumRailVisible
+        else {
+            return
+        }
         needsDeckRebuild = false
         lastPreparedAssetCount = library.assets.count
         rebuildDeck()

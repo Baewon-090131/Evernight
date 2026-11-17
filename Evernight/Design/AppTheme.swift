@@ -13,10 +13,10 @@ enum AppTheme {
 }
 
 enum AppRelease {
-    static let versionNumber = "0.2"
+    static let versionNumber = "0.3"
     static let releaseName = "Get Up"
-    static let buildNumber = "2"
-    static let displayVersion = "v0.2 Get Up"
+    static let buildNumber = "3"
+    static let displayVersion = "v0.3 Get Up"
 }
 
 enum AppFont {

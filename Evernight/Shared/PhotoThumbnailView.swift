@@ -33,7 +33,6 @@ struct PhotoThumbnailView: View {
                 Image(uiImage: image)
                     .resizable()
                     .aspectRatio(contentMode: contentMode)
-                    .transition(.opacity)
             } else {
                 Image(systemName: asset.kind.systemImage)
                     .font(AppFont.pingFang(24, weight: .light))

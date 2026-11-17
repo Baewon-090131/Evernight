@@ -1,8 +1,8 @@
 # Evernight
 
-一个自制自用的相册整理工具。当前版本为 `v0.2 Get Up`，目标是先完成一套可以在真机相册上实际使用的核心流程。
+一个自制自用的相册整理工具。当前版本为 `v0.3 Get Up`，目标是先完成一套可以在真机相册上实际使用的核心流程。
 
-## v0.2 已实现
+## v0.3 已实现
 
 - 通过 PhotoKit 请求相册读写权限。
 - 按拍摄月份读取照片和视频。
@@ -55,7 +55,7 @@ open Evernight.xcodeproj
 bash scripts/build-ipa.sh
 ```
 
-未签名 IPA 输出到 `artifacts/Evernight-v0.2-Get-Up-unsigned.ipa`。
+未签名 IPA 输出到 `artifacts/Evernight-v0.3-Get-Up-unsigned.ipa`。
 
 ## GitHub Actions 构建 IPA
 
@@ -73,7 +73,7 @@ bash scripts/build-ipa.sh
 ## 权限与数据
 
 - 照片读取、缩略图回调和整理索引均在本机完成。
-- v0.2 不上传相册内容。
+- v0.3 不上传相册内容。
 - 待删除项目只保存在内存中。
 - 点击删除后仍会经过 iOS 系统删除确认，并可在系统“最近删除”中恢复。
 - 应用进入后台时会用长夜月图案遮住相册内容。
