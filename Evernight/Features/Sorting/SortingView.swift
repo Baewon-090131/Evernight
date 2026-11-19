@@ -13,7 +13,6 @@ struct SortingView: View {
     @State private var currentCardOpacity = 1.0
     @State private var currentCardScale: CGFloat = 1
     @State private var nextCardRevealProgress: CGFloat = 0
-    @State private var frontSlotIndex = 0
     @State private var isAnimating = false
     @State private var cardLayerVisible = false
     @State private var hasPreparedInitialDeck = false
@@ -264,6 +263,7 @@ struct SortingView: View {
                     height: containerSize.height * displayScale
                 )
                 let next = deck.next
+                let cards = [asset, next].compactMap { $0 }
 
                 ZStack {
                     ambientCard(
@@ -284,20 +284,20 @@ struct SortingView: View {
                         .fill(AppTheme.background.opacity(albumRailVisible ? 0.2 : 0))
                         .allowsHitTesting(false)
 
-                    ForEach([0, 1], id: \.self) { slotIndex in
-                        if let slotAsset = slotAsset(at: slotIndex) {
-                            let size = mediaCardSize(for: slotAsset, in: containerSize)
-                            let targetSize = imageTargetSize(for: size)
-                            cardSlot(
-                                slotAsset,
-                                size: size,
-                                targetSize: targetSize,
-                                isFront: slotIndex == frontSlotIndex,
-                                containerSize: containerSize
-                            )
-                            .id("sorting-card-slot-\(slotIndex)")
-                            .zIndex(slotIndex == frontSlotIndex ? 3 : 1)
-                        }
+                    // 以资源 ID 保持卡片身份，避免换卡时重建已加载的媒体视图。
+                    ForEach(cards, id: \.id) { cardAsset in
+                        let isFront = cardAsset.id == asset.id
+                        let size = mediaCardSize(for: cardAsset, in: containerSize)
+                        let targetSize = imageTargetSize(for: size)
+
+                        cardSlot(
+                            cardAsset,
+                            size: size,
+                            targetSize: targetSize,
+                            isFront: isFront,
+                            containerSize: containerSize
+                        )
+                        .zIndex(isFront ? 3 : 1)
                     }
 
                     if albumRailVisible {
@@ -330,10 +330,6 @@ struct SortingView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
-    }
-
-    private func slotAsset(at slotIndex: Int) -> PhotoAsset? {
-        slotIndex == frontSlotIndex ? deck.current : deck.next
     }
 
     private func cardSlot(
@@ -833,7 +829,6 @@ struct SortingView: View {
             )
             withoutAnimation {
                 _ = deck.undoLastAction()
-                frontSlotIndex = 1 - frontSlotIndex
                 dragOffset = entryOffset
                 currentCardOpacity = 0
                 currentCardScale = 0.92
@@ -898,7 +893,6 @@ struct SortingView: View {
     private func completeCurrentAtomically(_ action: SortingAction) {
         withoutAnimation {
             _ = deck.completeCurrent(action)
-            frontSlotIndex = 1 - frontSlotIndex
             resetPresentationStateValues()
         }
     }
@@ -928,7 +922,6 @@ struct SortingView: View {
             deck.replaceAssets(
                 library.sortingAssets(for: month, scope: library.mediaScope)
             )
-            frontSlotIndex = 0
             resetPresentationStateValues()
         }
     }
