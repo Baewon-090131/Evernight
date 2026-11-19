@@ -287,15 +287,12 @@ struct SortingView: View {
                         .allowsHitTesting(false)
 
                     // 以资源 ID 保持卡片身份，避免换卡时重建已加载的媒体视图。
-                    ForEach(cards, id: \.id) { cardAsset in
-                        let role: CardRole
-                        if cardAsset.id == asset.id {
-                            role = .current
-                        } else if cardAsset.id == next?.id {
-                            role = .next
-                        } else {
-                            role = .preloaded
-                        }
+                    ForEach(cards, id: \PhotoAsset.id) { cardAsset in
+                        let role = cardRole(
+                            for: cardAsset,
+                            currentID: asset.id,
+                            nextID: next?.id
+                        )
                         let size = mediaCardSize(for: cardAsset, in: containerSize)
                         let targetSize = imageTargetSize(for: size)
 
@@ -343,6 +340,20 @@ struct SortingView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
+    }
+
+    private func cardRole(
+        for asset: PhotoAsset,
+        currentID: String,
+        nextID: String?
+    ) -> CardRole {
+        if asset.id == currentID {
+            return .current
+        }
+        if asset.id == nextID {
+            return .next
+        }
+        return .preloaded
     }
 
     private func cardSlot(
