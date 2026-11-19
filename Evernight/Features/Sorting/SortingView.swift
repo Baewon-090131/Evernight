@@ -285,7 +285,7 @@ struct SortingView: View {
                         .allowsHitTesting(false)
 
                     ForEach([0, 1], id: \.self) { slotIndex in
-                        if let slotAsset = asset(forSlot: slotIndex) {
+                        if let slotAsset = slotAsset(at: slotIndex) {
                             let size = mediaCardSize(for: slotAsset, in: containerSize)
                             let targetSize = imageTargetSize(for: size)
                             cardSlot(
@@ -332,7 +332,7 @@ struct SortingView: View {
         }
     }
 
-    private func asset(forSlot slotIndex: Int) -> PhotoAsset? {
+    private func slotAsset(at slotIndex: Int) -> PhotoAsset? {
         slotIndex == frontSlotIndex ? deck.current : deck.next
     }
 
