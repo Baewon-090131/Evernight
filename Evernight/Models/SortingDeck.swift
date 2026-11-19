@@ -15,6 +15,8 @@ nonisolated struct SortingStep: Identifiable, Hashable, Sendable {
 }
 
 nonisolated struct SortingDeck: Sendable {
+    static let maximumUndoDepth = 10
+
     private(set) var assets: [PhotoAsset]
     private(set) var history: [SortingStep] = []
     private(set) var cursor = 0
@@ -42,6 +44,17 @@ nonisolated struct SortingDeck: Sendable {
         history.last
     }
 
+    func cardWindow(previousCount: Int = 2, nextCount: Int = 2) -> [PhotoAsset] {
+        guard assets.indices.contains(cursor) else { return [] }
+
+        let lowerBound = max(0, cursor - max(previousCount, 0))
+        let upperBound = min(
+            assets.count,
+            cursor + max(nextCount, 0) + 1
+        )
+        return Array(assets[lowerBound..<upperBound])
+    }
+
     mutating func replaceAssets(_ newAssets: [PhotoAsset]) {
         assets = newAssets
         history = []
@@ -53,6 +66,9 @@ nonisolated struct SortingDeck: Sendable {
 
         let step = SortingStep(asset: current, index: cursor, action: action)
         history.append(step)
+        if history.count > Self.maximumUndoDepth {
+            history.removeFirst(history.count - Self.maximumUndoDepth)
+        }
         cursor += 1
         return step
     }

@@ -29,6 +29,56 @@ struct SortingDeckTests {
         #expect(deck.isFinished)
     }
 
+    @Test
+    func cardWindowIncludesTwoItemsOnEachSide() {
+        var deck = SortingDeck(
+            assets: (1...7).map { asset("\($0)") }
+        )
+
+        #expect(deck.cardWindow().map(\.id) == ["1", "2", "3"])
+
+        for _ in 0..<3 {
+            _ = deck.completeCurrent(.skip)
+        }
+        #expect(deck.cardWindow().map(\.id) == ["2", "3", "4", "5", "6"])
+
+        for _ in 0..<3 {
+            _ = deck.completeCurrent(.skip)
+        }
+        #expect(deck.cardWindow().map(\.id) == ["5", "6", "7"])
+    }
+
+    @Test
+    func undoHistoryKeepsOnlyTheLatestTenActions() throws {
+        var deck = SortingDeck(
+            assets: (1...12).map { asset("\($0)") }
+        )
+        let actions: [SortingAction] = (0..<12).map { index in
+            if index.isMultiple(of: 3) {
+                return .moveToAlbum("album-\(index)")
+            }
+            return index.isMultiple(of: 2) ? .skip : .queueDeletion
+        }
+        var completedSteps: [SortingStep] = []
+
+        for action in actions {
+            let step = try #require(deck.completeCurrent(action))
+            completedSteps.append(step)
+        }
+
+        #expect(deck.history.count == SortingDeck.maximumUndoDepth)
+
+        for expectedStep in completedSteps.suffix(10).reversed() {
+            let undoneStep = try #require(deck.undoLastAction())
+            #expect(undoneStep == expectedStep)
+        }
+
+        #expect(deck.undoLastAction() == nil)
+        #expect(deck.history.isEmpty)
+        #expect(deck.cursor == 2)
+        #expect(deck.current?.id == "3")
+    }
+
     @Test(arguments: MediaScope.allCases, [AssetKind.photo, .video, .other])
     func mediaScopeFiltersKinds(scope: MediaScope, kind: AssetKind) {
         let expected = switch scope {

@@ -42,6 +42,8 @@ struct SortingView: View {
                 } else if let asset = deck.current {
                     sortingProgressHeader
                     cardStack(asset)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .layoutPriority(1)
                         .opacity(cardLayerVisible ? 1 : 0)
                         .allowsHitTesting(cardLayerVisible)
                 } else {
@@ -263,9 +265,9 @@ struct SortingView: View {
                     height: containerSize.height * displayScale
                 )
                 let next = deck.next
-                let cards = [asset, next].compactMap { $0 }
+                let cards = deck.cardWindow()
 
-                ZStack {
+                ZStack(alignment: .center) {
                     ambientCard(
                         asset,
                         targetSize: ambientTargetSize,
@@ -286,7 +288,14 @@ struct SortingView: View {
 
                     // 以资源 ID 保持卡片身份，避免换卡时重建已加载的媒体视图。
                     ForEach(cards, id: \.id) { cardAsset in
-                        let isFront = cardAsset.id == asset.id
+                        let role: CardRole
+                        if cardAsset.id == asset.id {
+                            role = .current
+                        } else if cardAsset.id == next?.id {
+                            role = .next
+                        } else {
+                            role = .preloaded
+                        }
                         let size = mediaCardSize(for: cardAsset, in: containerSize)
                         let targetSize = imageTargetSize(for: size)
 
@@ -294,10 +303,10 @@ struct SortingView: View {
                             cardAsset,
                             size: size,
                             targetSize: targetSize,
-                            isFront: isFront,
+                            role: role,
                             containerSize: containerSize
                         )
-                        .zIndex(isFront ? 3 : 1)
+                        .zIndex(role.zIndex)
                     }
 
                     if albumRailVisible {
@@ -321,7 +330,11 @@ struct SortingView: View {
                         .zIndex(8)
                     }
                 }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .frame(
+                    width: containerSize.width,
+                    height: containerSize.height,
+                    alignment: .center
+                )
                 .coordinateSpace(name: DragCoordinateSpace.name)
             } else {
                 ProgressView("准备卡片…")
@@ -336,15 +349,48 @@ struct SortingView: View {
         _ asset: PhotoAsset,
         size: CGSize,
         targetSize: CGSize,
-        isFront: Bool,
+        role: CardRole,
         containerSize: CGSize
     ) -> some View {
+        let isFront = role == .current
         let revealProgress = nextCardRevealProgress
         let backScale = 0.92 + 0.08 * revealProgress
         let backOffset = CGSize(
             width: 0,
             height: 14 * (1 - revealProgress)
         )
+        let cardScale: CGFloat = switch role {
+        case .current:
+            renderedCardScale
+        case .next:
+            backScale
+        case .preloaded:
+            0.92
+        }
+        let cardOffset: CGSize = switch role {
+        case .current:
+            dragOffset
+        case .next:
+            backOffset
+        case .preloaded:
+            .zero
+        }
+        let cardOpacity: Double = switch role {
+        case .current:
+            currentCardOpacity
+        case .next:
+            Double(revealProgress)
+        case .preloaded:
+            0
+        }
+        let shadowOpacity: Double = switch role {
+        case .current:
+            abs(dragOffset.height) > 40 ? 0.34 : 0.18
+        case .next:
+            0.18 * Double(revealProgress)
+        case .preloaded:
+            0
+        }
 
         return cardVisual(
             asset,
@@ -352,9 +398,9 @@ struct SortingView: View {
             targetSize: targetSize,
             isFront: isFront
         )
-        .scaleEffect(isFront ? renderedCardScale : backScale)
-        .offset(isFront ? dragOffset : backOffset)
-        .opacity(isFront ? currentCardOpacity : Double(revealProgress))
+        .scaleEffect(cardScale)
+        .offset(cardOffset)
+        .opacity(cardOpacity)
         .rotationEffect(
             .degrees(
                 isFront && !albumRailVisible
@@ -363,11 +409,7 @@ struct SortingView: View {
             )
         )
         .shadow(
-            color: AppTheme.red.opacity(
-                isFront
-                    ? (abs(dragOffset.height) > 40 ? 0.34 : 0.18)
-                    : 0.18 * Double(revealProgress)
-            ),
+            color: AppTheme.red.opacity(shadowOpacity),
             radius: 30,
             y: 22
         )
@@ -794,7 +836,9 @@ struct SortingView: View {
     private func undo(containerSize: CGSize) async {
         guard !isAnimating else { return }
         guard let step = deck.previousStep else {
-            errorMessage = "还没有可以撤回的整理动作。"
+            errorMessage = deck.cursor > 0
+                ? "最多只能撤回最近 \(SortingDeck.maximumUndoDepth) 个整理行为。"
+                : "还没有可以撤回的整理动作。"
             Haptics.error()
             returnToRest()
             return
@@ -1070,6 +1114,23 @@ struct SortingView: View {
             return "待删除项目会先进入复核区，不会直接删除。"
         }
         return "切换媒体类型，或前往逐月选择其他月份。"
+    }
+}
+
+private enum CardRole: Equatable {
+    case current
+    case next
+    case preloaded
+
+    var zIndex: Double {
+        switch self {
+        case .current:
+            3
+        case .next:
+            1
+        case .preloaded:
+            0
+        }
     }
 }
 
