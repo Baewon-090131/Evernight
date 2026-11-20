@@ -424,10 +424,6 @@ struct SortingView: View {
         let isFront = role == .current
         let revealProgress = nextCardRevealProgress
         let backScale = 0.92 + 0.08 * revealProgress
-        let backOffset = CGSize(
-            width: 0,
-            height: 14 * (1 - revealProgress)
-        )
         let cardScale: CGFloat = switch role {
         case .current:
             renderedCardScale
@@ -440,7 +436,7 @@ struct SortingView: View {
         case .current:
             dragOffset
         case .next:
-            backOffset
+            .zero
         case .preloaded:
             .zero
         }
