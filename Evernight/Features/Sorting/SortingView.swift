@@ -467,6 +467,7 @@ struct SortingView: View {
             targetSize: targetSize,
             isFront: isFront
         )
+        .geometryGroup()
         .scaleEffect(cardScale)
         .offset(cardOffset)
         .opacity(cardOpacity)
@@ -853,14 +854,7 @@ struct SortingView: View {
         lockedDragAxis = nil
         albumRailVisible = false
 
-        withAnimation(cardAnimation(duration: 0.28)) {
-            nextCardRevealProgress = 1
-            currentCardOpacity = 0
-            currentCardScale = 1.04
-            dragOffset = off
-        }
-
-        try? await Task.sleep(for: .milliseconds(reduceMotion ? 16 : 280))
+        await animateCardAdvance(off: off)
 
         if action == .queueDeletion {
             library.queueForDeletion(asset)
@@ -874,6 +868,22 @@ struct SortingView: View {
             Haptics.impact(.light)
         }
         applyDeferredDeckRebuildIfNeeded()
+    }
+
+    private func animateCardAdvance(off: CGSize) async {
+        await withCheckedContinuation { continuation in
+            withAnimation(
+                cardAnimation(duration: 0.28),
+                completionCriteria: .removed
+            ) {
+                nextCardRevealProgress = 1
+                currentCardOpacity = 0
+                currentCardScale = 1.04
+                dragOffset = off
+            } completion: {
+                continuation.resume()
+            }
+        }
     }
 
     private func animateAlbumAdd(

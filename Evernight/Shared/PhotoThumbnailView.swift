@@ -39,6 +39,7 @@ struct PhotoThumbnailView: View {
                     .foregroundStyle(AppTheme.muted)
             }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .clipped()
         .onAppear {
             isVisible = true
