@@ -10,7 +10,7 @@ struct PhotoThumbnailView: View {
     var contentMode: ContentMode = .fill
 
     @State private var image: UIImage?
-    @State private var requestID: PHImageRequestID?
+    @State private var requestID: ThumbnailRequestHandle?
     @State private var hasFinalImage = false
     @State private var isVisible = false
 
@@ -42,6 +42,7 @@ struct PhotoThumbnailView: View {
         .clipped()
         .onAppear {
             isVisible = true
+            primeCachedImage()
             load()
         }
         .onChange(of: asset.id) { _, _ in
@@ -49,6 +50,7 @@ struct PhotoThumbnailView: View {
             image = nil
             hasFinalImage = false
             if isVisible {
+                primeCachedImage()
                 load()
             }
         }
@@ -60,7 +62,7 @@ struct PhotoThumbnailView: View {
     }
 
     private func load() {
-        guard image == nil, requestID == nil else { return }
+        guard !hasFinalImage, requestID == nil else { return }
         let request = library.requestThumbnail(
             for: asset.id,
             targetSize: targetSize,
@@ -71,15 +73,27 @@ struct PhotoThumbnailView: View {
             }
         ) { finalImage in
             requestID = nil
-            guard isVisible else { return }
-            withAnimation(.easeOut(duration: 0.16)) {
-                hasFinalImage = true
-                image = finalImage
-            }
+            guard isVisible, let finalImage else { return }
+            hasFinalImage = true
+            image = finalImage
         }
         if !hasFinalImage {
             requestID = request
         }
+    }
+
+    private func primeCachedImage() {
+        guard
+            image == nil,
+            let cachedImage = library.cachedThumbnailPreview(
+                for: asset.id,
+                targetSize: targetSize,
+                contentMode: requestContentMode
+            )
+        else {
+            return
+        }
+        image = cachedImage
     }
 
     private func cancelRequest() {

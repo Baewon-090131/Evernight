@@ -266,6 +266,11 @@ struct SortingView: View {
                 )
                 let next = deck.next
                 let cards = deck.cardWindow()
+                let prefetchAssets = thumbnailPrefetchAssets()
+                let prefetchKey = thumbnailPrefetchKey(
+                    for: prefetchAssets,
+                    in: containerSize
+                )
 
                 ZStack(alignment: .center) {
                     ambientCard(
@@ -327,6 +332,12 @@ struct SortingView: View {
                         .zIndex(8)
                     }
                 }
+                .task(id: prefetchKey) {
+                    prefetchThumbnails(
+                        for: prefetchAssets,
+                        in: containerSize
+                    )
+                }
                 .frame(
                     width: containerSize.width,
                     height: containerSize.height,
@@ -340,6 +351,53 @@ struct SortingView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
+    }
+
+    private func thumbnailPrefetchAssets() -> [PhotoAsset] {
+        [0, 1, 2, -1, -2].compactMap { offset in
+            let index = deck.cursor + offset
+            guard deck.assets.indices.contains(index) else { return nil }
+            return deck.assets[index]
+        }
+    }
+
+    private func thumbnailPrefetchKey(
+        for assets: [PhotoAsset],
+        in containerSize: CGSize
+    ) -> String {
+        let assetIDs = assets.map(\.id).joined(separator: "|")
+        return "\(month.id)-\(Int(containerSize.width))x\(Int(containerSize.height))-\(assetIDs)"
+    }
+
+    private func prefetchThumbnails(
+        for assets: [PhotoAsset],
+        in containerSize: CGSize
+    ) {
+        for asset in assets {
+            let cardSize = mediaCardSize(for: asset, in: containerSize)
+            library.prefetchThumbnail(
+                for: asset.id,
+                targetSize: imageTargetSize(for: cardSize),
+                contentMode: .fit
+            )
+        }
+    }
+
+    private func prepareFollowingThumbnail(
+        in containerSize: CGSize
+    ) async -> Bool {
+        guard let next = deck.next else { return true }
+        let cardSize = mediaCardSize(for: next, in: containerSize)
+        let isReady = await library.waitForThumbnailPreview(
+            for: next.id,
+            targetSize: imageTargetSize(for: cardSize),
+            contentMode: .fit
+        )
+        if !isReady {
+            errorMessage = "下一张图片暂时无法加载，请稍后重试。"
+            Haptics.error()
+        }
+        return isReady
     }
 
     private func cardRole(
@@ -433,7 +491,14 @@ struct SortingView: View {
         .accessibilityHint("向左下一项，向右撤回上一步，向上加入待删除，向下选择相簿")
         .accessibilityAction(named: "下一张") {
             guard isFront else { return }
-            Task { await advance(asset, action: .skip, off: CGSize(width: -720, height: 0)) }
+            Task {
+                await advance(
+                    asset,
+                    action: .skip,
+                    off: CGSize(width: -720, height: 0),
+                    containerSize: containerSize
+                )
+            }
         }
         .accessibilityAction(named: "撤回") {
             guard isFront else { return }
@@ -447,7 +512,8 @@ struct SortingView: View {
                 await advance(
                     asset,
                     action: .queueDeletion,
-                    off: CGSize(width: 0, height: -760)
+                    off: CGSize(width: 0, height: -760),
+                    containerSize: containerSize
                 )
             }
         }
@@ -694,7 +760,8 @@ struct SortingView: View {
                     await advance(
                         asset,
                         action: .skip,
-                        off: CGSize(width: -max(containerSize.width * 1.35, 720), height: y)
+                        off: CGSize(width: -max(containerSize.width * 1.35, 720), height: y),
+                        containerSize: containerSize
                     )
                 }
             } else {
@@ -705,7 +772,8 @@ struct SortingView: View {
                 await advance(
                     asset,
                     action: .queueDeletion,
-                    off: CGSize(width: x, height: -max(containerSize.height * 1.2, 760))
+                    off: CGSize(width: x, height: -max(containerSize.height * 1.2, 760)),
+                    containerSize: containerSize
                 )
             }
         } else {
@@ -773,10 +841,15 @@ struct SortingView: View {
     private func advance(
         _ asset: PhotoAsset,
         action: SortingAction,
-        off: CGSize
+        off: CGSize,
+        containerSize: CGSize
     ) async {
         guard !isAnimating else { return }
         isAnimating = true
+        guard await prepareFollowingThumbnail(in: containerSize) else {
+            returnToRest()
+            return
+        }
         lockedDragAxis = nil
         albumRailVisible = false
 
@@ -811,6 +884,10 @@ struct SortingView: View {
     ) async {
         guard !isAnimating else { return }
         isAnimating = true
+        guard await prepareFollowingThumbnail(in: containerSize) else {
+            returnToRest()
+            return
+        }
         lockedDragAxis = nil
 
         withAnimation(cardAnimation(duration: 0.22)) {

@@ -30,6 +30,45 @@ struct DeleteReceipt: Hashable, Sendable {
     let estimatedBytes: Int64
 }
 
+nonisolated struct ThumbnailRequestHandle: Hashable, Sendable {
+    let id: UUID
+}
+
+private struct ThumbnailSubscriber {
+    let preview: (@MainActor (UIImage) -> Void)?
+    let completion: @MainActor (UIImage?) -> Void
+}
+
+private final class PendingThumbnailRequest {
+    var requestID: PHImageRequestID?
+    var subscribers: [UUID: ThumbnailSubscriber] = [:]
+}
+
+private final class ThumbnailReadinessGate {
+    private var result: Bool?
+    private var continuation: CheckedContinuation<Bool, Never>?
+
+    func resolve(_ isReady: Bool) {
+        guard result == nil else { return }
+        result = isReady
+        continuation?.resume(returning: isReady)
+        continuation = nil
+    }
+
+    func wait() async -> Bool {
+        if let result {
+            return result
+        }
+        return await withCheckedContinuation { continuation in
+            if let result {
+                continuation.resume(returning: result)
+            } else {
+                self.continuation = continuation
+            }
+        }
+    }
+}
+
 @Observable
 final class PhotoLibraryStore {
     private(set) var authorizationStatus = PHPhotoLibrary.authorizationStatus(for: .readWrite)
@@ -54,7 +93,12 @@ final class PhotoLibraryStore {
     }
 
     private let imageCache = NSCache<NSString, UIImage>()
+    private let previewImageCache = NSCache<NSString, UIImage>()
     private let imageManager = PHCachingImageManager()
+    @ObservationIgnored private var pendingThumbnailRequests: [String: PendingThumbnailRequest] = [:]
+    @ObservationIgnored private var thumbnailRequestKeys: [
+        ThumbnailRequestHandle: String
+    ] = [:]
     private let statisticsKey = "evernight.sortStatistics"
     private let processedKey = "evernight.processedAssetIDs"
     private let recentMovesKey = "evernight.recentMoves"
@@ -63,6 +107,8 @@ final class PhotoLibraryStore {
     init() {
         imageCache.countLimit = 180
         imageCache.totalCostLimit = 96 * 1024 * 1024
+        previewImageCache.countLimit = 180
+        previewImageCache.totalCostLimit = 24 * 1024 * 1024
         if
             let data = UserDefaults.standard.data(forKey: statisticsKey),
             let saved = try? JSONDecoder().decode(SortStatistics.self, from: data)
@@ -543,11 +589,21 @@ final class PhotoLibraryStore {
         contentMode: PHImageContentMode = .aspectFill,
         preview: (@MainActor (UIImage) -> Void)? = nil,
         completion: @escaping @MainActor (UIImage?) -> Void
-    ) -> PHImageRequestID? {
-        let cacheKey = "\(assetID)-\(Int(targetSize.width))x\(Int(targetSize.height))-\(contentMode == .aspectFill ? "fill" : "fit")" as NSString
-        if let image = imageCache.object(forKey: cacheKey) {
+    ) -> ThumbnailRequestHandle? {
+        let cacheKey = thumbnailCacheKey(
+            for: assetID,
+            targetSize: targetSize,
+            contentMode: contentMode
+        )
+        let cacheKeyObject = cacheKey as NSString
+        if let image = imageCache.object(forKey: cacheKeyObject) {
             completion(image)
             return nil
+        }
+
+        let previewCacheKey = "preview-\(cacheKey)" as NSString
+        if let image = previewImageCache.object(forKey: previewCacheKey) {
+            preview?(image)
         }
 
         guard
@@ -560,37 +616,156 @@ final class PhotoLibraryStore {
             return nil
         }
 
-        let options = PHImageRequestOptions()
-        options.deliveryMode = .opportunistic
-        options.isNetworkAccessAllowed = true
-        options.resizeMode = .exact
-        options.version = .current
+        let handle = ThumbnailRequestHandle(id: UUID())
+        let pending =
+            pendingThumbnailRequests[cacheKey]
+            ?? PendingThumbnailRequest()
+        pendingThumbnailRequests[cacheKey] = pending
+        pending.subscribers[handle.id] = ThumbnailSubscriber(
+            preview: preview,
+            completion: completion
+        )
+        thumbnailRequestKeys[handle] = cacheKey
 
-        return imageManager.requestImage(
-            for: asset,
-            targetSize: targetSize,
-            contentMode: contentMode,
-            options: options
-        ) { [weak self] image, info in
-            let isDegraded = (info?[PHImageResultIsDegradedKey] as? Bool) ?? false
-            Task { @MainActor in
-                if isDegraded {
-                    if let image {
-                        preview?(image)
+        if pending.requestID == nil {
+            let options = PHImageRequestOptions()
+            options.deliveryMode = .opportunistic
+            options.isNetworkAccessAllowed = true
+            options.resizeMode = .exact
+            options.version = .current
+
+            pending.requestID = imageManager.requestImage(
+                for: asset,
+                targetSize: targetSize,
+                contentMode: contentMode,
+                options: options
+            ) { [weak self] image, info in
+                let isDegraded = (info?[PHImageResultIsDegradedKey] as? Bool) ?? false
+                Task { @MainActor in
+                    guard let self else { return }
+                    if isDegraded {
+                        guard let image else { return }
+                        self.previewImageCache.setObject(
+                            image,
+                            forKey: previewCacheKey,
+                            cost: self.imageCost(for: image)
+                        )
+                        let subscribers = self.pendingThumbnailRequests[cacheKey]
+                            .map { Array($0.subscribers.values) } ?? []
+                        for subscriber in subscribers {
+                            subscriber.preview?(image)
+                        }
+                        return
                     }
-                    return
+
+                    if let image {
+                        self.imageCache.setObject(
+                            image,
+                            forKey: cacheKeyObject,
+                            cost: self.imageCost(for: image)
+                        )
+                    }
+                    let pending =
+                        self.pendingThumbnailRequests.removeValue(
+                            forKey: cacheKey
+                        )
+                    guard let pending else { return }
+                    for (subscriberID, subscriber) in pending.subscribers {
+                        self.thumbnailRequestKeys.removeValue(
+                            forKey: ThumbnailRequestHandle(id: subscriberID)
+                        )
+                        subscriber.completion(image)
+                    }
                 }
-                if let image {
-                    let cost = (image.cgImage?.width ?? 0) * (image.cgImage?.height ?? 0) * 4
-                    self?.imageCache.setObject(image, forKey: cacheKey, cost: cost)
-                }
-                completion(image)
             }
         }
+        return handle
     }
 
-    func cancelThumbnailRequest(_ requestID: PHImageRequestID) {
-        imageManager.cancelImageRequest(requestID)
+    func cachedThumbnailPreview(
+        for assetID: String,
+        targetSize: CGSize,
+        contentMode: PHImageContentMode = .aspectFit
+    ) -> UIImage? {
+        let cacheKey = thumbnailCacheKey(
+            for: assetID,
+            targetSize: targetSize,
+            contentMode: contentMode
+        )
+        return imageCache.object(forKey: cacheKey as NSString)
+            ?? previewImageCache.object(forKey: "preview-\(cacheKey)" as NSString)
+    }
+
+    func prefetchThumbnail(
+        for assetID: String,
+        targetSize: CGSize,
+        contentMode: PHImageContentMode = .aspectFit
+    ) {
+        _ = requestThumbnail(
+            for: assetID,
+            targetSize: targetSize,
+            contentMode: contentMode,
+            completion: { _ in }
+        )
+    }
+
+    func waitForThumbnailPreview(
+        for assetID: String,
+        targetSize: CGSize,
+        contentMode: PHImageContentMode = .aspectFit,
+        timeoutMilliseconds: Int = 1_500
+    ) async -> Bool {
+        if cachedThumbnailPreview(
+            for: assetID,
+            targetSize: targetSize,
+            contentMode: contentMode
+        ) != nil {
+            return true
+        }
+
+        let gate = ThumbnailReadinessGate()
+        let timeoutTask = Task {
+            try? await Task.sleep(for: .milliseconds(timeoutMilliseconds))
+            guard !Task.isCancelled else { return }
+            gate.resolve(false)
+        }
+        _ = requestThumbnail(
+            for: assetID,
+            targetSize: targetSize,
+            contentMode: contentMode,
+            preview: { _ in gate.resolve(true) },
+            completion: { image in gate.resolve(image != nil) }
+        )
+        let isReady = await gate.wait()
+        timeoutTask.cancel()
+        return isReady
+    }
+
+    func cancelThumbnailRequest(_ handle: ThumbnailRequestHandle) {
+        guard
+            let cacheKey = thumbnailRequestKeys.removeValue(forKey: handle),
+            let pending = pendingThumbnailRequests[cacheKey]
+        else {
+            return
+        }
+        pending.subscribers.removeValue(forKey: handle.id)
+        guard pending.subscribers.isEmpty else { return }
+        if let requestID = pending.requestID {
+            imageManager.cancelImageRequest(requestID)
+        }
+        pendingThumbnailRequests.removeValue(forKey: cacheKey)
+    }
+
+    private func thumbnailCacheKey(
+        for assetID: String,
+        targetSize: CGSize,
+        contentMode: PHImageContentMode
+    ) -> String {
+        "\(assetID)-\(Int(targetSize.width))x\(Int(targetSize.height))-\(contentMode == .aspectFill ? "fill" : "fit")"
+    }
+
+    private func imageCost(for image: UIImage) -> Int {
+        (image.cgImage?.width ?? 0) * (image.cgImage?.height ?? 0) * 4
     }
 
     func requestVideoPlayerItem(

@@ -269,7 +269,7 @@ private struct AlbumCoverView: View {
     let targetSize: CGSize
 
     @State private var image: UIImage?
-    @State private var requestID: PHImageRequestID?
+    @State private var requestID: ThumbnailRequestHandle?
 
     var body: some View {
         ZStack {
