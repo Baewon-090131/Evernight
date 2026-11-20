@@ -378,7 +378,7 @@ struct SortingView: View {
             library.prefetchThumbnail(
                 for: asset.id,
                 targetSize: imageTargetSize(for: cardSize),
-                contentMode: .fit
+                contentMode: .aspectFit
             )
         }
     }
@@ -391,7 +391,7 @@ struct SortingView: View {
         let isReady = await library.waitForThumbnailPreview(
             for: next.id,
             targetSize: imageTargetSize(for: cardSize),
-            contentMode: .fit
+            contentMode: .aspectFit
         )
         if !isReady {
             errorMessage = "下一张图片暂时无法加载，请稍后重试。"
