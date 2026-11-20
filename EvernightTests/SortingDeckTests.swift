@@ -62,18 +62,21 @@ struct SortingDeckTests {
         var completedSteps: [SortingStep] = []
 
         for action in actions {
-            let step = try #require(deck.completeCurrent(action))
+            let completion = deck.completeCurrent(action)
+            let step = try #require(completion)
             completedSteps.append(step)
         }
 
         #expect(deck.history.count == SortingDeck.maximumUndoDepth)
 
         for expectedStep in completedSteps.suffix(10).reversed() {
-            let undoneStep = try #require(deck.undoLastAction())
+            let undo = deck.undoLastAction()
+            let undoneStep = try #require(undo)
             #expect(undoneStep == expectedStep)
         }
 
-        #expect(deck.undoLastAction() == nil)
+        let extraUndo = deck.undoLastAction()
+        #expect(extraUndo == nil)
         #expect(deck.history.isEmpty)
         #expect(deck.cursor == 2)
         #expect(deck.current?.id == "3")
