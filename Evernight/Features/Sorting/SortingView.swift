@@ -13,6 +13,7 @@ struct SortingView: View {
     @State private var currentCardOpacity = 1.0
     @State private var currentCardScale: CGFloat = 1
     @State private var nextCardRevealProgress: CGFloat = 0
+    @State private var activeFrontAssetID: String?
     @State private var isAnimating = false
     @State private var cardLayerVisible = false
     @State private var hasPreparedInitialDeck = false
@@ -422,11 +423,13 @@ struct SortingView: View {
         containerSize: CGSize
     ) -> some View {
         let isFront = role == .current
+        let usesFrontAnimation =
+            isFront && activeFrontAssetID == asset.id
         let revealProgress = nextCardRevealProgress
         let backScale = 0.92 + 0.08 * revealProgress
         let cardScale: CGFloat = switch role {
         case .current:
-            renderedCardScale
+            usesFrontAnimation ? renderedCardScale : 1
         case .next:
             backScale
         case .preloaded:
@@ -434,7 +437,7 @@ struct SortingView: View {
         }
         let cardOffset: CGSize = switch role {
         case .current:
-            dragOffset
+            usesFrontAnimation ? dragOffset : .zero
         case .next:
             .zero
         case .preloaded:
@@ -442,7 +445,7 @@ struct SortingView: View {
         }
         let cardOpacity: Double = switch role {
         case .current:
-            currentCardOpacity
+            usesFrontAnimation ? currentCardOpacity : 1
         case .next:
             Double(revealProgress)
         case .preloaded:
@@ -450,7 +453,7 @@ struct SortingView: View {
         }
         let shadowOpacity: Double = switch role {
         case .current:
-            abs(dragOffset.height) > 40 ? 0.34 : 0.18
+            usesFrontAnimation && abs(dragOffset.height) > 40 ? 0.34 : 0.18
         case .next:
             0.18 * Double(revealProgress)
         case .preloaded:
@@ -469,7 +472,7 @@ struct SortingView: View {
         .opacity(cardOpacity)
         .rotationEffect(
             .degrees(
-                isFront && !albumRailVisible
+                usesFrontAnimation && !albumRailVisible
                     ? dragOffset.width / 26
                     : 0
             )
@@ -637,6 +640,7 @@ struct SortingView: View {
         .onChanged { value in
             guard !isAnimating else { return }
 
+            activeFrontAssetID = deck.current?.id
             let x = value.translation.width
             let y = value.translation.height
 
@@ -847,6 +851,7 @@ struct SortingView: View {
             returnToRest()
             return
         }
+        activeFrontAssetID = asset.id
         lockedDragAxis = nil
         albumRailVisible = false
 
@@ -894,6 +899,7 @@ struct SortingView: View {
             returnToRest()
             return
         }
+        activeFrontAssetID = asset.id
         lockedDragAxis = nil
 
         withAnimation(cardAnimation(duration: 0.22)) {
@@ -939,6 +945,7 @@ struct SortingView: View {
         }
 
         isAnimating = true
+        activeFrontAssetID = deck.current?.id
         nextCardRevealProgress = 0
         lockedDragAxis = nil
         albumRailVisible = false
@@ -967,6 +974,7 @@ struct SortingView: View {
             )
             withoutAnimation {
                 _ = deck.undoLastAction()
+                activeFrontAssetID = deck.current?.id
                 dragOffset = entryOffset
                 currentCardOpacity = 0
                 currentCardScale = 0.92
@@ -1023,6 +1031,7 @@ struct SortingView: View {
         currentCardOpacity = 1
         currentCardScale = 1
         nextCardRevealProgress = 0
+        activeFrontAssetID = nil
         isAnimating = false
         lockedDragAxis = nil
         albumRailVisible = false
@@ -1038,6 +1047,7 @@ struct SortingView: View {
     private func returnToRest() {
         lockedDragAxis = nil
         isAnimating = true
+        activeFrontAssetID = deck.current?.id
         let animation = reduceMotion
             ? Animation.linear(duration: 0.01)
             : Animation.spring(response: 0.34, dampingFraction: 0.84)
